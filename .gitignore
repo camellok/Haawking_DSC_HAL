@@ -1,0 +1,27 @@
+# Build outputs
+Debug/
+Release/
+build/
+*.a
+*.d
+*.elf
+*.hex
+*.lib
+*.map
+*.o
+*.obj
+*.out
+
+# IDE and local state
+.idea/
+.vscode/
+*.launch
+*.user
+
+# Python
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+Thumbs.db

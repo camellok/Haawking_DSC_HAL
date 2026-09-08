@@ -1,0 +1,34 @@
+name: 缺陷报告
+description: 报告HAL接口、目标实现或文档中的可复现问题
+title: "[Bug] "
+labels: ["type: bug"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题描述
+      description: 说明预期行为和实际行为。
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: MCU与开发板
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: HAL、DriverLib与编译器版本
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤与证据
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: 尚未验证的边界
