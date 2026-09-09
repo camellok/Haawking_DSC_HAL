@@ -12,6 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_SUFFIXES = {".c", ".h"}
 FORBIDDEN_SUFFIXES = {".a", ".elf", ".hex", ".lib", ".o", ".obj", ".out"}
 SPDX_LINE = "SPDX-License-Identifier: Apache-2.0"
+COPYRIGHT_LINE = "Copyright (c) 2019-2026, Beijing Haawking Technology Co., Ltd"
+AUTHOR_LINE = "Author: Silin Luo"
+EMAIL_LINE = "Email : silin.luo@mail.haawking.com"
 MARKDOWN_LINK = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 
 
@@ -32,8 +35,21 @@ def check_source_files(files: list[Path]) -> list[str]:
 
         text = path.read_text(encoding="utf-8")
         relative_path = path.relative_to(ROOT)
+        header = "\n".join(text.splitlines()[:16])
         if SPDX_LINE not in "\n".join(text.splitlines()[:5]):
             errors.append(f"{relative_path}: missing Apache-2.0 SPDX header")
+
+        if COPYRIGHT_LINE not in header:
+            errors.append(f"{relative_path}: missing standard copyright line")
+
+        if AUTHOR_LINE not in header or EMAIL_LINE not in header:
+            errors.append(f"{relative_path}: missing standard author information")
+
+        if f"File  : {path.name}" not in header:
+            errors.append(f"{relative_path}: File header does not match filename")
+
+        if re.search(r"^ \* Description: \S.*$", header, re.MULTILINE) is None:
+            errors.append(f"{relative_path}: missing file description")
 
         if relative_path.parts[:2] == ("include", "hal"):
             if "driverlib" in text.lower():

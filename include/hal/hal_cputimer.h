@@ -1,5 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
+/******************************************************************************
+ * Copyright (c) 2019-2026, Beijing Haawking Technology Co., Ltd
+ *
+ * Author: Silin Luo
+ * Email : silin.luo@mail.haawking.com
+ * File  : hal_cputimer.h
+ * Description: Public interface for the CPU timer HAL.
+ ******************************************************************************/
+
 #ifndef HAL_CPUTIMER_H_
 #define HAL_CPUTIMER_H_
 

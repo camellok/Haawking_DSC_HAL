@@ -1,5 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
+/******************************************************************************
+ * Copyright (c) 2019-2026, Beijing Haawking Technology Co., Ltd
+ *
+ * Author: Silin Luo
+ * Email : silin.luo@mail.haawking.com
+ * File  : hal_status.h
+ * Description: Common status codes shared by Haawking DSC HAL modules.
+ ******************************************************************************/
+
 #ifndef HAL_STATUS_H_
 #define HAL_STATUS_H_
 

@@ -9,7 +9,9 @@
 - 建立HAL仓库结构、协作规范、Roadmap和GitHub工作流。
 - 增加跨外设公共`HAL_Status_t`。
 - 增加CpuTimer公共API和HXS320F28002x DriverLib目标实现。
-- 增加LaunchBoard 28002x CpuTimer参考platform。
+- 增加LaunchBoard 28002x通用参考platform，以单一组合入口管理当前CpuTimer时间服务并预留后续外设集成位置。
+- 展开ePWM、ADC、CLA、CAN、SCI、I2C及其他外设的分阶段Roadmap。
+- 为仓库自建C源文件和头文件增加统一文件说明块，并将规则加入AGENTS。
 
 ### Validation
 
