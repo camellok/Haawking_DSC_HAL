@@ -11,16 +11,3 @@
 
 #include "platform_config.h"
 
-HAL_CPUTIMER_Config_t gPlatformTimebaseTimerConfig =
-{
-    .periodTicks = PLATFORM_TIMEBASE_PERIOD_TICKS,
-    .clockDivider = 1U,
-    .emulationMode = HAL_CPUTIMER_EMULATION_STOP_AFTER_NEXT_DECREMENT
-};
-
-HAL_CPUTIMER_Config_t gPlatformTimestampTimerConfig =
-{
-    .periodTicks = HAL_CPUTIMER_MAX_PERIOD_TICKS,
-    .clockDivider = 1U,
-    .emulationMode = HAL_CPUTIMER_EMULATION_RUN_FREE
-};
