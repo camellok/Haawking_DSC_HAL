@@ -16,13 +16,6 @@
 #include "driverlib.h"
 #include "hal/hal_cputimer.h"
 
-#define PLATFORM_TIMEBASE_TIMER_BASE        CPUTIMER0_BASE
-#define PLATFORM_TIMESTAMP_TIMER_BASE       CPUTIMER2_BASE
-#define PLATFORM_TIMEBASE_INTERRUPT         INT_TIMER0
-#define PLATFORM_TIMEBASE_ACK_GROUP         INTERRUPT_ACK_GROUP1
-#define PLATFORM_TIMEBASE_PERIOD_TICKS      \
-    (PLATFORM_SYSTEM_CLOCK_HZ / PLATFORM_SYSTEM_TICK_HZ)
-
 static HAL_CPUTIMER_Obj timebaseTimer =
 {
     .baseAddress = PLATFORM_TIMEBASE_TIMER_BASE,
@@ -74,32 +67,22 @@ PLATFORM_getTimestamp(uint32_t *timestamp)
 static HAL_Status_t
 initTimeServices(void)
 {
-    const HAL_CPUTIMER_Config_t timebaseConfig =
-    {
-        .periodTicks = PLATFORM_TIMEBASE_PERIOD_TICKS,
-        .clockDivider = 1U,
-        .emulationMode = HAL_CPUTIMER_EMULATION_STOP_AFTER_NEXT_DECREMENT
-    };
-    const HAL_CPUTIMER_Config_t timestampConfig =
-    {
-        .periodTicks = HAL_CPUTIMER_MAX_PERIOD_TICKS,
-        .clockDivider = 1U,
-        .emulationMode = HAL_CPUTIMER_EMULATION_RUN_FREE
-    };
     HAL_Status_t status;
 
     /* Timer2 clock selection belongs to the platform clock plan. */
     CPUTimer_selectClockSource(PLATFORM_TIMESTAMP_TIMER_BASE,
-                               CPUTIMER_CLOCK_SOURCE_SYS,
-                               CPUTIMER_CLOCK_PRESCALER_1);
+                               PLATFORM_TIMESTAMP_TIMER_CLOCK_SOURCE,
+                               PLATFORM_TIMESTAMP_TIMER_PRESCALER);
 
-    status = HAL_CPUTIMER_init(&timebaseTimer, &timebaseConfig);
+    status = HAL_CPUTIMER_init(&timebaseTimer,
+                               &gPlatformTimebaseTimerConfig);
     if (status != HAL_STATUS_OK)
     {
         return status;
     }
 
-    status = HAL_CPUTIMER_init(&timestampTimer, &timestampConfig);
+    status = HAL_CPUTIMER_init(&timestampTimer,
+                               &gPlatformTimestampTimerConfig);
     if (status != HAL_STATUS_OK)
     {
         return status;

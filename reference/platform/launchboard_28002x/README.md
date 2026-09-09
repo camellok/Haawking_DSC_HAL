@@ -6,9 +6,10 @@
 
 | 文件 | 职责 |
 |---|---|
-| `platform_config.h` | 保存宿主必须核对的板级参数，当前包括系统时钟和系统tick频率 |
+| `platform_config.h` | 集中外设实例、IRQ、ACK组、时钟源等资源连接宏，并声明用户配置实例 |
+| `platform_config.c` | 定义用户可直接调整的全局HAL配置实例 |
 | `platform.h` | 向应用和服务暴露整板初始化、毫秒tick和原始时间戳等板级能力 |
-| `platform.c` | 持有HAL对象，绑定实例、时钟和中断，并按依赖顺序组合整个平台 |
+| `platform.c` | 私有持有HAL运行对象，使用配置层提供的资源和参数组合整个平台 |
 
 随着HAL模块增加，可以将`platform.c`内部实现拆成`platform_pwm.c`、`platform_adc.c`、`platform_can.c`等私有职责文件，但这些文件仍共同实现同一个板级platform。应用不应看到一套彼此独立的“CpuTimer platform”“ADC platform”或“CAN platform”。
 
@@ -29,6 +30,12 @@
 - CAN、SCI、I2C实例、GPIO、中断、DMA和缓冲区；
 - CMPSS、XBAR、ePWM Trip之间的保护链路。
 
+资源连接和HAL配置采用两种表达：
+
+- 可在预处理期确定的外设基地址、GPIO、IRQ、ACK组、时钟源和XBAR选择放在`platform_config.h`；
+- 需要传给HAL初始化接口的配置实例放在`platform_config.c`，使用全局静态存储期，用户在构建前直接修改初始化值；
+- HAL运行对象和platform内部状态保留在`platform.c`，不向应用暴露。
+
 ## 启动顺序
 
 参考`PLATFORM_init()`假设宿主已完成device时钟和中断控制器基础初始化，但尚未开启全局中断。整板platform应按硬件依赖安排初始化：
@@ -42,7 +49,7 @@
 
 ## 时间服务示例
 
-参考配置假设系统时钟为160 MHz。移植时必须修改`platform_config.h`，并用宿主工程实际时钟验证整除关系和1 ms周期。
+参考配置假设系统时钟为160 MHz。移植时必须修改`platform_config.h`中的资源宏和时钟值，并在`platform_config.c`核对配置实例，然后用宿主工程实际时钟验证整除关系和1 ms周期。
 
 Timer2提供原始递减时间戳。若一次测量最多跨越一次回绕，可使用无符号减法：
 

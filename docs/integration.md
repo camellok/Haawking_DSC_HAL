@@ -18,7 +18,7 @@ Source : third_party/Haawking_DSC_HAL/source/hxs320f28002x/hal_cputimer.c
 
 ## Platform接入
 
-Platform静态创建各外设HAL对象，绑定实际实例，并通过单一整板初始化入口按依赖顺序完成组合。以CpuTimer为例，platform设置`HAL_CPUTIMER_Obj.baseAddress`后调用`HAL_CPUTIMER_init()`，同时保留时钟源、中断注册和ISR所有权。可以参考`reference/platform/launchboard_28002x`中的`platform.h`、`platform_config.h`和`platform.c`，但必须按真实工程的资源表和启动顺序调整。
+Platform静态创建各外设HAL对象，绑定实际实例，并通过单一整板初始化入口按依赖顺序完成组合。外设基地址、GPIO、IRQ、ACK组和时钟源等连接宏集中在`platform_config.h`，用户可修改的全局HAL配置实例定义在`platform_config.c`。以CpuTimer为例，platform设置`HAL_CPUTIMER_Obj.baseAddress`后，把全局配置实例传给`HAL_CPUTIMER_init()`，同时保留中断注册和ISR所有权。可以参考`reference/platform/launchboard_28002x`，但必须按真实工程的资源表和启动顺序调整。
 
 ## 固定和升级版本
 
