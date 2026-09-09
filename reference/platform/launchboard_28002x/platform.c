@@ -28,10 +28,7 @@ static HAL_CPUTIMER_Obj timestampTimer =
     .state = HAL_CPUTIMER_STATE_UNINITIALIZED
 };
 
-static volatile uint32_t tickCountMs = 0U;
-
 static HAL_Status_t initTimeServices(void);
-static __interrupt void timebaseISR(void);
 
 HAL_Status_t
 PLATFORM_init(void)
@@ -52,16 +49,21 @@ PLATFORM_init(void)
     return HAL_STATUS_OK;
 }
 
-uint32_t
-PLATFORM_getTickCountMs(void)
-{
-    return tickCountMs;
-}
-
 HAL_Status_t
 PLATFORM_getTimestamp(uint32_t *timestamp)
 {
     return HAL_CPUTIMER_getCount(&timestampTimer, timestamp);
+}
+
+HAL_Status_t
+PLATFORM_acknowledgeTimebaseInterrupt(void)
+{
+    HAL_Status_t status;
+
+    status = HAL_CPUTIMER_clearOverflowFlag(&timebaseTimer);
+    Interrupt_clearACKGroup(PLATFORM_TIMEBASE_ACK_GROUP);
+
+    return status;
 }
 
 static HAL_Status_t
@@ -88,7 +90,7 @@ initTimeServices(void)
         return status;
     }
 
-    Interrupt_register(PLATFORM_TIMEBASE_INTERRUPT, &timebaseISR);
+    Interrupt_register(PLATFORM_TIMEBASE_INTERRUPT, &APP_timebaseISR);
     Interrupt_enable(PLATFORM_TIMEBASE_INTERRUPT);
 
     status = HAL_CPUTIMER_enableInterrupt(&timebaseTimer);
@@ -117,11 +119,18 @@ initTimeServices(void)
     return HAL_STATUS_OK;
 }
 
-static __interrupt void
-timebaseISR(void)
-{
-    tickCountMs++;
-
-    (void)HAL_CPUTIMER_clearOverflowFlag(&timebaseTimer);
-    Interrupt_clearACKGroup(PLATFORM_TIMEBASE_ACK_GROUP);
-}
+/*
+ * APP_timebaseISR() is intentionally not implemented by this reference
+ * platform. The consuming project may place it in main.c or in a centralized
+ * ISR source file. A typical application-owned handler has this shape:
+ *
+ * __interrupt void APP_timebaseISR(void)
+ * {
+ *     applicationTickMs++;
+ *     (void)PLATFORM_acknowledgeTimebaseInterrupt();
+ * }
+ *
+ * Updating the 1 ms application timebase is application behavior. The HAL
+ * configures CpuTimer hardware, while the platform only binds the selected
+ * timer, interrupt vector, and hardware acknowledgement path.
+ */

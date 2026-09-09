@@ -26,7 +26,7 @@ Haawking DSC HAL是面向真实固件项目维护的完整外设抽象库。仓�
 ```text
 Application / Service
           |
-          +------> platform（板级资源、时钟、IRQ、系统tick）
+          +------> platform（板级资源、时钟、IRQ绑定）
           |
           +------> HAL公共API
                          |
@@ -37,7 +37,7 @@ Application / Service
 
 - HAL描述外设能力、生命周期和错误语义。
 - 每块板使用一套通用platform组合层，持有各HAL对象并统一绑定实例、时钟、中断和跨外设资源。
-- 应用决定调度周期和产品策略。
+- 应用决定ISR放置、应用时基、调度周期和产品策略。
 
 完整规则见[架构说明](docs/architecture.md)和[platform规范](docs/platform_guidelines.md)。
 

@@ -13,6 +13,7 @@
 - 展开ePWM、ADC、CLA、CAN、SCI、I2C及其他外设的分阶段Roadmap。
 - 为仓库自建C源文件和头文件增加统一文件说明块，并将规则加入AGENTS。
 - 将参考platform的外设连接宏集中到`platform_config.h`，并把用户可修改的CpuTimer配置实例移到`platform_config.c`全局定义。
+- 将Timer0 ISR改为宿主提供的外部符号，移除platform维护的毫秒计数，并明确应用时基属于应用层。
 
 ### Validation
 
