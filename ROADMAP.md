@@ -48,7 +48,7 @@
 Platform工作：
 
 - 以`platform.h`和`PLATFORM_init()`作为整板组合入口；
-- 用`platform_config.h`集中外设资源连接宏，用`platform_config.c`保存具有静态存储期的用户可修改HAL配置实例；
+- 用`platform_config.h`集中外设资源连接宏，在`platform.c`文件作用域保存具有静态存储期的用户可修改HAL配置实例；
 - platform持有HAL对象，统一安排实例、时钟源、中断注册和PIE ACK；
 - CpuTimer0提供1 ms硬件中断源，ISR由宿主应用实现并维护应用时基；CpuTimer2提供自由运行原始时间戳，CpuTimer1保持未分配；
 - 后续ePWM、ADC、CLA和通信模块按依赖顺序加入同一platform组合层，不为每个HAL复制一套独立“platform”。
