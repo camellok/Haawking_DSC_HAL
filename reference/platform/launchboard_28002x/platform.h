@@ -30,11 +30,16 @@ extern "C"
  */
 HAL_Status_t PLATFORM_init(void);
 
-/** Return the platform-owned millisecond timebase updated by the Timer0 ISR. */
-uint32_t PLATFORM_getTickCountMs(void);
-
 /** Read the raw free-running platform timestamp supplied by Timer2. */
 HAL_Status_t PLATFORM_getTimestamp(uint32_t *timestamp);
+
+/**
+ * Clear the Timer0 overflow flag and acknowledge its interrupt group.
+ *
+ * The application-provided Timer0 ISR calls this after completing its own
+ * bounded work, such as updating an application-owned 1 ms timebase.
+ */
+HAL_Status_t PLATFORM_acknowledgeTimebaseInterrupt(void);
 
 #ifdef __cplusplus
 }

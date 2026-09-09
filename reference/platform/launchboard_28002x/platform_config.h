@@ -43,4 +43,7 @@
 extern HAL_CPUTIMER_Config_t gPlatformTimebaseTimerConfig;
 extern HAL_CPUTIMER_Config_t gPlatformTimestampTimerConfig;
 
+/* Implement this ISR in main.c or in the consuming project's ISR module. */
+extern __interrupt void APP_timebaseISR(void);
+
 #endif /* REFERENCE_PLATFORM_CONFIG_H_ */
