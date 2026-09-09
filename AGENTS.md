@@ -62,7 +62,8 @@
 ## 5. Platform规则
 
 - 每块参考板使用一套通用platform组合入口，不按单个HAL模块建立彼此独立的platform；内部可以按职责拆分源文件。
-- `platform.h`只暴露应用或服务真正需要的板级能力，`platform_config.h`集中可移植的板级参数，私有初始化函数负责组合各HAL。
+- `platform.h`只暴露应用或服务真正需要的板级能力；`platform_config.h`集中外设实例、GPIO、IRQ、ACK组、时钟源、XBAR等资源连接宏，并声明用户配置实例；`platform_config.c`定义具有静态存储期的用户可修改HAL配置实例。
+- HAL配置实例不得定义为初始化函数的局部变量；HAL运行对象和platform内部状态保持在platform实现内，除非存在明确的跨模块所有权需求。
 - platform持有HAL对象并在首次初始化前写入外设实例标识。
 - 时钟树、pinmux、IRQ路由、PIE ACK、DMA/XBAR和外部器件控制属于platform。
 - platform可以为固定目标保存HAL配置，但不得成为每个运行接口的机械转发层。

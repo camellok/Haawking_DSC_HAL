@@ -11,7 +11,7 @@ Platform负责：
 - DMA、XBAR和外部器件控制；
 - 固定目标的HAL配置与安全初始化顺序。
 
-每块参考板应提供一套通用platform组合入口，例如`platform.h`、`platform_config.h`和`platform.c`。随着外设增加，可以把内部实现拆分成多个私有源文件，但它们共同维护同一张板级资源表和同一条启动链，不为每个HAL模块创建相互独立的platform层。
+每块参考板应提供一套通用platform组合入口，例如`platform.h`、`platform_config.h`、`platform_config.c`和`platform.c`。`platform_config.h`集中实例、GPIO、IRQ、ACK组、时钟源和XBAR等资源连接宏；`platform_config.c`定义用户可修改且具有静态存储期的HAL配置实例。配置实例不得隐藏在初始化函数的局部变量中。随着外设增加，可以把内部实现拆分成多个私有源文件，但它们共同维护同一张板级资源表和同一条启动链，不为每个HAL模块创建相互独立的platform层。
 
 建议的组合顺序：
 
