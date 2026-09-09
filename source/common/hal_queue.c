@@ -11,6 +11,7 @@
 
 #include "hal/hal_queue.h"
 
+#include <stdint.h>
 #include <string.h>
 
 static HAL_Status_t validateHandle(HAL_QUEUE_Handle_t handle);
@@ -29,7 +30,7 @@ HAL_QUEUE_init(HAL_QUEUE_Handle_t handle,
         return HAL_STATUS_INVALID_ARGUMENT;
     }
 
-    handle->storage = (uint8_t *)storage;
+    handle->storage = storage;
     handle->elementSize = elementSize;
     handle->capacity = capacity;
     handle->readIndex = 0U;
@@ -61,7 +62,7 @@ HAL_Status_t
 HAL_QUEUE_push(HAL_QUEUE_Handle_t handle, const void *element)
 {
     HAL_Status_t status;
-    uint8_t *destination;
+    unsigned char *destination;
 
     if (element == NULL)
     {
@@ -79,7 +80,8 @@ HAL_QUEUE_push(HAL_QUEUE_Handle_t handle, const void *element)
         return HAL_STATUS_FULL;
     }
 
-    destination = &handle->storage[handle->writeIndex * handle->elementSize];
+    destination = (unsigned char *)handle->storage +
+                  (handle->writeIndex * handle->elementSize);
     (void)memcpy(destination, element, handle->elementSize);
     handle->writeIndex = advanceIndex(handle->writeIndex, handle->capacity);
     handle->count++;
@@ -91,7 +93,7 @@ HAL_Status_t
 HAL_QUEUE_pop(HAL_QUEUE_Handle_t handle, void *element)
 {
     HAL_Status_t status;
-    const uint8_t *source;
+    const unsigned char *source;
 
     if (element == NULL)
     {
@@ -109,7 +111,8 @@ HAL_QUEUE_pop(HAL_QUEUE_Handle_t handle, void *element)
         return HAL_STATUS_EMPTY;
     }
 
-    source = &handle->storage[handle->readIndex * handle->elementSize];
+    source = (const unsigned char *)handle->storage +
+             (handle->readIndex * handle->elementSize);
     (void)memcpy(element, source, handle->elementSize);
     handle->readIndex = advanceIndex(handle->readIndex, handle->capacity);
     handle->count--;
@@ -121,7 +124,7 @@ HAL_Status_t
 HAL_QUEUE_peek(HAL_QUEUE_Handle_t handle, void *element)
 {
     HAL_Status_t status;
-    const uint8_t *source;
+    const unsigned char *source;
 
     if (element == NULL)
     {
@@ -139,7 +142,8 @@ HAL_QUEUE_peek(HAL_QUEUE_Handle_t handle, void *element)
         return HAL_STATUS_EMPTY;
     }
 
-    source = &handle->storage[handle->readIndex * handle->elementSize];
+    source = (const unsigned char *)handle->storage +
+             (handle->readIndex * handle->elementSize);
     (void)memcpy(element, source, handle->elementSize);
 
     return HAL_STATUS_OK;

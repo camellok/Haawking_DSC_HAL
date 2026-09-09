@@ -15,6 +15,7 @@
 - 将参考platform的外设连接宏集中到`platform_config.h`，并在`platform.c`文件作用域定义用户可修改的CpuTimer配置实例。
 - 将Timer0 ISR改为宿主提供的外部符号，移除platform维护的毫秒计数，并明确应用时基属于应用层。
 - 增加目标无关的固定容量泛型软件队列、`HAL_STATUS_FULL`状态和主机单元测试。
+- 将泛型队列的公开存储指针改为`void *`，仅在实现内使用`unsigned char *`计算元素槽位。
 
 ### Validation
 
