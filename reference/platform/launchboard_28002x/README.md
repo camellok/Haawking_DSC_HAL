@@ -7,9 +7,8 @@
 | 文件 | 职责 |
 |---|---|
 | `platform_config.h` | 集中外设实例、IRQ、ACK组、时钟源等资源连接宏，并声明用户配置实例 |
-| `platform_config.c` | 定义用户可直接调整的全局HAL配置实例 |
 | `platform.h` | 向应用和ISR暴露整板初始化、原始时间戳和中断硬件确认接口 |
-| `platform.c` | 私有持有HAL运行对象，使用配置层提供的资源和参数组合整个平台 |
+| `platform.c` | 定义全局HAL配置实例，私有持有HAL运行对象，并使用配置层提供的资源和参数组合整个平台 |
 
 随着HAL模块增加，可以将`platform.c`内部实现拆成`platform_pwm.c`、`platform_adc.c`、`platform_can.c`等私有职责文件，但这些文件仍共同实现同一个板级platform。应用不应看到一套彼此独立的“CpuTimer platform”“ADC platform”或“CAN platform”。
 
@@ -33,7 +32,7 @@
 资源连接和HAL配置采用两种表达：
 
 - 可在预处理期确定的外设基地址、GPIO、IRQ、ACK组、时钟源和XBAR选择放在`platform_config.h`；
-- 需要传给HAL初始化接口的配置实例放在`platform_config.c`，使用全局静态存储期，用户在构建前直接修改初始化值；
+- 需要传给HAL初始化接口的配置实例在`platform.c`文件作用域定义，具有静态存储期，用户在构建前直接修改初始化值；
 - HAL运行对象和platform内部状态保留在`platform.c`，不向应用暴露。
 
 ## 启动顺序
@@ -49,7 +48,7 @@
 
 ## 时间服务示例
 
-参考配置假设系统时钟为160 MHz。移植时必须修改`platform_config.h`中的资源宏和时钟值，在`platform_config.c`核对配置实例，并由宿主提供`APP_timebaseISR()`。ISR可以放在统一ISR文件或`main.c`，其中的1 ms计数属于应用状态；ISR结束前调用`PLATFORM_acknowledgeTimebaseInterrupt()`完成硬件标志清理和PIE ACK。
+参考配置假设系统时钟为160 MHz。移植时必须修改`platform_config.h`中的资源宏和时钟值，在`platform.c`核对配置实例，并由宿主提供`APP_timebaseISR()`。ISR可以放在统一ISR文件或`main.c`，其中的1 ms计数属于应用状态；ISR结束前调用`PLATFORM_acknowledgeTimebaseInterrupt()`完成硬件标志清理和PIE ACK。
 
 Timer2提供原始递减时间戳。若一次测量最多跨越一次回绕，可使用无符号减法：
 

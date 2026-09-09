@@ -21,7 +21,7 @@ Common : third_party/Haawking_DSC_HAL/source/common/hal_queue.c（按需）
 
 ## Platform接入
 
-Platform静态创建各外设HAL对象，绑定实际实例，并通过单一整板初始化入口按依赖顺序完成组合。外设基地址、GPIO、IRQ、ACK组和时钟源等连接宏集中在`platform_config.h`，用户可修改的全局HAL配置实例定义在`platform_config.c`。以CpuTimer为例，platform设置`HAL_CPUTIMER_Obj.baseAddress`后，把全局配置实例传给`HAL_CPUTIMER_init()`并注册宿主提供的外部ISR。ISR可以放在`main.c`或统一ISR文件；1 ms应用时基由应用维护，platform只提供硬件标志清理和PIE ACK接口。可以参考`reference/platform/launchboard_28002x`，但必须按真实工程的资源表和启动顺序调整。
+Platform静态创建各外设HAL对象，绑定实际实例，并通过单一整板初始化入口按依赖顺序完成组合。外设基地址、GPIO、IRQ、ACK组和时钟源等连接宏集中在`platform_config.h`，用户可修改的全局HAL配置实例在platform实现文件中以文件作用域定义。以CpuTimer为例，`platform.c`设置`HAL_CPUTIMER_Obj.baseAddress`后，把全局配置实例传给`HAL_CPUTIMER_init()`并注册宿主提供的外部ISR。ISR可以放在`main.c`或统一ISR文件；1 ms应用时基由应用维护，platform只提供硬件标志清理和PIE ACK接口。可以参考`reference/platform/launchboard_28002x`，但必须按真实工程的资源表和启动顺序调整。
 
 ## 固定和升级版本
 

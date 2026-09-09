@@ -16,31 +16,30 @@
 #include "driverlib.h"
 #include "hal/hal_cputimer.h"
 
-static HAL_CPUTIMER_Obj timebaseTimer = 
+static HAL_CPUTIMER_Obj timebaseTimer =
 {
     .baseAddress = PLATFORM_TIMEBASE_TIMER_BASE,
     .state = HAL_CPUTIMER_STATE_UNINITIALIZED
 };
 
-static HAL_CPUTIMER_Obj timestampTimer = 
+static HAL_CPUTIMER_Obj timestampTimer =
 {
     .baseAddress = PLATFORM_TIMESTAMP_TIMER_BASE,
     .state = HAL_CPUTIMER_STATE_UNINITIALIZED
 };
 
-HAL_CPUTIMER_Config_t gPlatformTimebaseTimerConfig = 
+HAL_CPUTIMER_Config_t gPlatformTimebaseTimerConfig =
 {
     .periodTicks = PLATFORM_TIMEBASE_PERIOD_TICKS,
     .clockDivider = 1U,
     .emulationMode = HAL_CPUTIMER_EMULATION_STOP_AFTER_NEXT_DECREMENT
 };
 
-HAL_CPUTIMER_Config_t gPlatformTimestampTimerConfig = 
+HAL_CPUTIMER_Config_t gPlatformTimestampTimerConfig =
 {
     .periodTicks = HAL_CPUTIMER_MAX_PERIOD_TICKS,
     .clockDivider = 1U,
-    .emulationMode =
-    HAL_CPUTIMER_EMULATION_RUN_FREE
+    .emulationMode = HAL_CPUTIMER_EMULATION_RUN_FREE
 };
 
 static HAL_Status_t initTimeServices(void);
@@ -87,16 +86,19 @@ initTimeServices(void)
     HAL_Status_t status;
 
     /* Timer2 clock selection belongs to the platform clock plan. */
-    CPUTimer_selectClockSource(PLATFORM_TIMESTAMP_TIMER_BASE, PLATFORM_TIMESTAMP_TIMER_CLOCK_SOURCE,
+    CPUTimer_selectClockSource(PLATFORM_TIMESTAMP_TIMER_BASE,
+                               PLATFORM_TIMESTAMP_TIMER_CLOCK_SOURCE,
                                PLATFORM_TIMESTAMP_TIMER_PRESCALER);
 
-    status = HAL_CPUTIMER_init(&timebaseTimer, &gPlatformTimebaseTimerConfig);
+    status = HAL_CPUTIMER_init(&timebaseTimer,
+                               &gPlatformTimebaseTimerConfig);
     if (status != HAL_STATUS_OK)
     {
         return status;
     }
 
-    status = HAL_CPUTIMER_init(&timestampTimer, &gPlatformTimestampTimerConfig);
+    status = HAL_CPUTIMER_init(&timestampTimer,
+                               &gPlatformTimestampTimerConfig);
     if (status != HAL_STATUS_OK)
     {
         return status;
