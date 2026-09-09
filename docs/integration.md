@@ -12,9 +12,12 @@ git submodule update --init --recursive
 ```text
 Include: third_party/Haawking_DSC_HAL/include
 Source : third_party/Haawking_DSC_HAL/source/hxs320f28002x/hal_cputimer.c
+Common : third_party/Haawking_DSC_HAL/source/common/hal_queue.c（按需）
 ```
 
 宿主还必须提供目标匹配的`driverlib.h`和DriverLib实现。不要把`source`根目录整体加入递归编译。
+
+`source/common`中的文件不依赖DriverLib，可以由所有目标共用。只加入实际使用的组件；泛型队列的存储区由宿主静态分配，跨ISR与主循环共享时由宿主负责同步。
 
 ## Platform接入
 
