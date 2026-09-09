@@ -14,7 +14,6 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
 
 #include "hal_status.h"
 
@@ -39,7 +38,7 @@ typedef enum
  */
 typedef struct
 {
-    uint8_t *storage;
+    void *storage;
     size_t elementSize;
     size_t capacity;
     size_t readIndex;
@@ -53,8 +52,9 @@ typedef HAL_QUEUE_Obj *HAL_QUEUE_Handle_t;
 /**
  * Initialize or reinitialize a queue with caller-owned storage.
  *
- * The storage must contain at least elementSize * capacity bytes and remain
- * valid while the queue is used. Invalid arguments leave the object unchanged.
+ * The storage must contain at least elementSize * capacity C storage units,
+ * where elementSize is normally obtained with sizeof. It must remain valid
+ * while the queue is used. Invalid arguments leave the object unchanged.
  */
 HAL_Status_t HAL_QUEUE_init(HAL_QUEUE_Handle_t handle,
                             void *storage,
