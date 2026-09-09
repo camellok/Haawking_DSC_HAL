@@ -2,16 +2,22 @@
 
 > A reusable, target-oriented hardware abstraction library for Haawking DSC projects. Vendor DriverLib and device support are supplied by the consuming firmware project.
 
-Haawking DSC HAL是面向真实固件项目维护的外设抽象库。仓库保存稳定的公共接口、芯片族目标实现、platform设计规范和验证记录；不打包DriverLib、device支持或完整应用例程。
+Haawking DSC HAL是面向真实固件项目维护的完整外设抽象库。仓库保存稳定的公共接口、芯片族目标实现、platform设计规范和验证记录；不打包DriverLib、device支持或完整应用例程。路线优先覆盖CpuTimer、ePWM、ADC、CLA、CAN、SCI和I2C，并按项目需求扩展其余外设。
 
 > [!IMPORTANT]
 > 当前状态为早期开发。CpuTimer接口与HXS320F28002x目标实现已经建立，但在宿主工程完成编译和上板验收前不会发布`v0.1.0`。
 
-## 当前支持
+## 外设状态
 
 | 外设 | 公共API | 目标实现 | 宿主编译 | 上板验证 |
 |---|---|---|---|---|
 | CpuTimer | 已实现 | HXS320F28002x DriverLib | 待验证 | 待验证 |
+| ePWM | 规划中 | 未开始 | 未开始 | 未开始 |
+| ADC | 规划中 | 未开始 | 未开始 | 未开始 |
+| CLA | 规划中 | 未开始 | 未开始 | 未开始 |
+| CAN | 等待训练接口冻结 | 未迁移 | 未开始 | 未开始 |
+| SCI | 规划中 | 未开始 | 未开始 | 未开始 |
+| I2C | 规划中 | 未开始 | 未开始 | 未开始 |
 
 详细进度见[ROADMAP](ROADMAP.md)。
 
@@ -30,7 +36,7 @@ Application / Service
 ```
 
 - HAL描述外设能力、生命周期和错误语义。
-- platform持有HAL对象并绑定外设实例、时钟和中断资源。
+- 每块板使用一套通用platform组合层，持有各HAL对象并统一绑定实例、时钟、中断和跨外设资源。
 - 应用决定调度周期和产品策略。
 
 完整规则见[架构说明](docs/architecture.md)和[platform规范](docs/platform_guidelines.md)。
@@ -60,7 +66,7 @@ git submodule update --init --recursive
 - 产品业务逻辑；
 - 可独立构建的完整例程。
 
-`reference/platform`中的代码只用于说明资源所有权和调用关系，可以复制并按项目需要改造。
+`reference/platform`中的代码展示整板资源所有权、初始化顺序和调用关系，可以复制并按项目需要改造。参考platform不会为每个HAL模块建立相互独立的板级封装。
 
 ## 协作与版本
 

@@ -36,6 +36,19 @@
 
 ## 4. C代码规范
 
+- 新建或迁入仓库自主管理的`.h`和`.c`文件时，文件顶部必须先保留`SPDX-License-Identifier: Apache-2.0`，并紧随其后使用统一说明块；`File`和`Description`按文件实际内容填写，其余字段保持一致：
+
+```c
+/******************************************************************************
+ * Copyright (c) 2019-2026, Beijing Haawking Technology Co., Ltd
+ *
+ * Author: Silin Luo
+ * Email : silin.luo@mail.haawking.com
+ * File  : <file_name>
+ * Description: <file_description>
+ ******************************************************************************/
+```
+
 - 使用4个空格缩进，函数和控制块的大括号另起一行，所有控制块均使用大括号。
 - 文件使用lower snake case；公共函数采用模块前缀和动词短语；宏使用带模块前缀的UPPER_SNAKE_CASE。
 - 带单位的配置量在名称中标注单位；物理值与寄存器编码必须明确区分。
@@ -48,6 +61,8 @@
 
 ## 5. Platform规则
 
+- 每块参考板使用一套通用platform组合入口，不按单个HAL模块建立彼此独立的platform；内部可以按职责拆分源文件。
+- `platform.h`只暴露应用或服务真正需要的板级能力，`platform_config.h`集中可移植的板级参数，私有初始化函数负责组合各HAL。
 - platform持有HAL对象并在首次初始化前写入外设实例标识。
 - 时钟树、pinmux、IRQ路由、PIE ACK、DMA/XBAR和外部器件控制属于platform。
 - platform可以为固定目标保存HAL配置，但不得成为每个运行接口的机械转发层。
@@ -72,6 +87,7 @@
 
 - 运行`python tools/check_repository.py`；
 - 运行`git diff --check`；
+- 确认所有自建`.h/.c`文件包含统一文件头，且`File`字段与实际文件名一致；
 - 确认没有DriverLib副本、静态库、构建产物或敏感信息；
 - 检查公共API、README、Roadmap、验证状态和CHANGELOG是否一致；
 - 保留用户已有修改，不使用`git reset --hard`或其他破坏性Git操作。

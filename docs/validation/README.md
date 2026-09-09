@@ -23,4 +23,4 @@
 ## 未验证边界
 ```
 
-CpuTimer首轮验收项见[Roadmap](../../ROADMAP.md#p1cputimer)。
+CpuTimer首轮验收项见[Roadmap](../../ROADMAP.md#p1platform骨架与cputimer)。

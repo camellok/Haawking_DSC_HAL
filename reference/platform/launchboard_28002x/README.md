@@ -1,22 +1,53 @@
-# LaunchBoard 28002x CpuTimer参考绑定
+# LaunchBoard 28002x参考platform
 
-本目录展示platform如何组合CpuTimer HAL，不是可独立运行的例程，也不是稳定公共API。
+本目录展示一块目标板如何通过单一platform组合入口绑定多个HAL模块。它是可复制改造的架构参考，不是CpuTimer专用封装、稳定公共API或可独立构建的完整例程。
 
-参考绑定分配CpuTimer0作为1 ms系统tick，CpuTimer2作为32位自由运行递减计数器，CpuTimer1保持未分配。实际项目可以改变实例、频率、中断优先级和接口名称，但应继续遵守以下边界：
+## 文件职责
 
-- platform持有`HAL_CPUTIMER_Obj`并设置外设基地址；
-- platform选择Timer2时钟源并完成中断注册和PIE ACK；
-- HAL只配置CpuTimer外设内部行为；
-- 应用只读取platform提供的时间服务，不直接使用DriverLib；
-- 初始化前，宿主工程已经完成device和中断控制器初始化；
-- 全局中断的最终开启时机由宿主工程顶层启动流程决定。
+| 文件 | 职责 |
+|---|---|
+| `platform_config.h` | 保存宿主必须核对的板级参数，当前包括系统时钟和系统tick频率 |
+| `platform.h` | 向应用和服务暴露整板初始化、毫秒tick和原始时间戳等板级能力 |
+| `platform.c` | 持有HAL对象，绑定实例、时钟和中断，并按依赖顺序组合整个平台 |
 
-参考配置假设系统时钟为160 MHz。移植时必须将`PLATFORM_CPUTIMER_SYSTEM_CLOCK_HZ`替换为目标固件的实际时钟，并验证整除关系和实际tick周期。
+随着HAL模块增加，可以将`platform.c`内部实现拆成`platform_pwm.c`、`platform_adc.c`、`platform_can.c`等私有职责文件，但这些文件仍共同实现同一个板级platform。应用不应看到一套彼此独立的“CpuTimer platform”“ADC platform”或“CAN platform”。
 
-Timer2耗时测量使用递减计数。若一次测量最多跨越一次回绕，可以使用无符号减法计算：
+## 当前资源分配
+
+| 资源 | 用途 | 所有者 |
+|---|---|---|
+| CpuTimer0 | 1 ms platform时间基准 | platform持有对象、ISR和tick状态 |
+| CpuTimer1 | 未分配 | 留给实际项目统一分配 |
+| CpuTimer2 | 32位自由运行递减时间戳 | platform持有对象并选择时钟源 |
+| PIE Group 1 / Timer0 IRQ | 时间基准中断 | platform注册ISR并完成ACK |
+
+当前实现仅因仓库已完成CpuTimer HAL而组合时间服务。后续模块进入仓库时，同一platform应继续维护一张整板资源表，例如：
+
+- ePWM实例、输出GPIO、同步链、Trip输入和ADC SOC触发；
+- ADC实例、SOC编号、模拟通道、PPB、中断和DMA目标；
+- CLA任务、消息RAM、触发源和任务完成中断；
+- CAN、SCI、I2C实例、GPIO、中断、DMA和缓冲区；
+- CMPSS、XBAR、ePWM Trip之间的保护链路。
+
+## 启动顺序
+
+参考`PLATFORM_init()`假设宿主已完成device时钟和中断控制器基础初始化，但尚未开启全局中断。整板platform应按硬件依赖安排初始化：
+
+1. 核对时钟树并配置pinmux、输入资格和XBAR；
+2. 建立保护链路，使功率输出保持在安全状态；
+3. 初始化通信、PWM、ADC、CLA和DMA等platform持有对象；
+4. 注册ISR并清理陈旧外设标志和PIE ACK；
+5. 启动时间服务和必须运行的外设；
+6. 返回宿主启动代码，由其决定全局中断和功率输出的最终开启时机。
+
+## 时间服务示例
+
+参考配置假设系统时钟为160 MHz。移植时必须修改`platform_config.h`，并用宿主工程实际时钟验证整除关系和1 ms周期。
+
+Timer2提供原始递减时间戳。若一次测量最多跨越一次回绕，可使用无符号减法：
 
 ```c
-elapsedTicks = startCount - endCount;
+elapsedTicks = startTimestamp - endTimestamp;
 ```
 
-更长的统计窗口、微秒换算和回绕累计属于platform或调度服务职责。
+更长时间累计、物理时间换算、调度器和产品超时策略属于platform上层服务或应用职责。

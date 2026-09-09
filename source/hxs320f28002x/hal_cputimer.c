@@ -1,5 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
+/******************************************************************************
+ * Copyright (c) 2019-2026, Beijing Haawking Technology Co., Ltd
+ *
+ * Author: Silin Luo
+ * Email : silin.luo@mail.haawking.com
+ * File  : hal_cputimer.c
+ * Description: HXS320F28002x backend for the CPU timer HAL.
+ ******************************************************************************/
+
 #include "hal/hal_cputimer.h"
 
 #include <stddef.h>
