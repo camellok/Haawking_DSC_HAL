@@ -23,3 +23,12 @@ jobs:
 
       - name: Validate repository boundaries
         run: python tools/check_repository.py
+
+      - name: Build and run target-independent queue tests
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror \
+            -Iinclude \
+            source/common/hal_queue.c \
+            tests/test_hal_queue.c \
+            -o "$RUNNER_TEMP/test_hal_queue"
+          "$RUNNER_TEMP/test_hal_queue"

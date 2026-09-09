@@ -21,6 +21,14 @@ Haawking DSC HAL是面向真实固件项目维护的完整外设抽象库。仓�
 
 详细进度见[ROADMAP](ROADMAP.md)。
 
+## 通用软件组件
+
+| 组件 | 状态 | 动态内存 | 说明 |
+|---|---|---|---|
+| 泛型队列 | 已实现并有主机测试 | 不使用 | 调用者提供固定容量存储区，按元素大小复制任意数据类型 |
+
+泛型队列位于`source/common`，不依赖DriverLib或具体外设。API、错误语义、使用示例和并发边界见[软件队列说明](docs/software_queue.md)。
+
 ## 分层关系
 
 ```text
@@ -51,7 +59,7 @@ git submodule update --init --recursive
 宿主工程需要：
 
 1. 把`third_party/Haawking_DSC_HAL/include`加入头文件搜索路径；
-2. 只编译目标芯片目录，例如`source/hxs320f28002x/hal_cputimer.c`；
+2. 按需编译`source/common`中的目标无关组件，并且只编译一个目标芯片目录，例如`source/hxs320f28002x/hal_cputimer.c`；
 3. 提供匹配目标芯片的`driverlib.h`、DriverLib实现和device启动代码；
 4. 在platform中创建静态HAL对象并设置外设基地址；
 5. 把子模块固定到已验证发布标签对应的提交。

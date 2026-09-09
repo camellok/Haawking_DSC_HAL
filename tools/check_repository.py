@@ -55,6 +55,10 @@ def check_source_files(files: list[Path]) -> list[str]:
             if "driverlib" in text.lower():
                 errors.append(f"{relative_path}: public header references DriverLib")
 
+        if relative_path.parts[:2] == ("source", "common"):
+            if "driverlib" in text.lower():
+                errors.append(f"{relative_path}: common source references DriverLib")
+
     return errors
 
 
