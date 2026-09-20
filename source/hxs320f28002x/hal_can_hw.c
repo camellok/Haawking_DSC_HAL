@@ -37,7 +37,10 @@ HAL_CAN_hwInitializeModule(uint32_t canBaseAddress)
         remainingIterations--;
     }
 
-    if (remainingIterations == 0U)
+    /* Re-read completion so a result on the final allowed iteration succeeds. */
+    if ((HWREG(canBaseAddress + CAN_O_RAM_INIT) & CAN_RAM_INIT_MASK) !=
+        (CAN_RAM_INIT_RAM_INIT_DONE | CAN_RAM_INIT_KEY2 |
+         CAN_RAM_INIT_KEY0))
     {
         return HAL_STATUS_TIMEOUT;
     }
