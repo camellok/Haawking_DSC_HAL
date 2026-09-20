@@ -623,8 +623,8 @@ HAL_Status_t HAL_CAN_getTxCompleteEvent(HAL_CAN_Handle_t handle,
 /**
  * Captures the controller's current portable bus and protocol diagnostics.
  *
- * The implementation uses DriverLib status and error-counter accessors and
- * performs only bounded register reads plus HAL semantic mapping. It may be
+ * The target backend reads controller status and error counters, then performs
+ * only bounded register access plus HAL semantic mapping. It may be
  * called directly by the target error ISR or by a foreground diagnostic
  * service. HAL_CAN_process() samples only while both diagnostic interrupt
  * sources are masked, so the ISR and foreground never consume the same DCAN

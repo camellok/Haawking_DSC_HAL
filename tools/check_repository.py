@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Validate repository boundaries that do not require the target toolchain."""
 
-from __future__ import annotations
-
 import re
 import sys
 from pathlib import Path
+from typing import List
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,7 +17,7 @@ EMAIL_LINE = "Email : silin.luo@mail.haawking.com"
 MARKDOWN_LINK = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 
 
-def iter_repository_files() -> list[Path]:
+def iter_repository_files() -> List[Path]:
     return [
         path
         for path in ROOT.rglob("*")
@@ -26,8 +25,8 @@ def iter_repository_files() -> list[Path]:
     ]
 
 
-def check_source_files(files: list[Path]) -> list[str]:
-    errors: list[str] = []
+def check_source_files(files: List[Path]) -> List[str]:
+    errors: List[str] = []
 
     for path in files:
         if path.suffix.lower() not in SOURCE_SUFFIXES:
@@ -62,8 +61,8 @@ def check_source_files(files: list[Path]) -> list[str]:
     return errors
 
 
-def check_forbidden_files(files: list[Path]) -> list[str]:
-    errors: list[str] = []
+def check_forbidden_files(files: List[Path]) -> List[str]:
+    errors: List[str] = []
 
     for path in files:
         relative_path = path.relative_to(ROOT)
@@ -73,8 +72,8 @@ def check_forbidden_files(files: list[Path]) -> list[str]:
     return errors
 
 
-def check_markdown_links(files: list[Path]) -> list[str]:
-    errors: list[str] = []
+def check_markdown_links(files: List[Path]) -> List[str]:
+    errors: List[str] = []
 
     for path in files:
         if path.suffix.lower() != ".md":
