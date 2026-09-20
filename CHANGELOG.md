@@ -16,6 +16,9 @@
 - 将Timer0 ISR改为宿主提供的外部符号，移除platform维护的毫秒计数，并明确应用时基属于应用层。
 - 增加目标无关的固定容量泛型软件队列、`HAL_STATUS_FULL`状态和主机单元测试。
 - 将泛型队列的公开存储指针改为`void *`，仅在实现内使用`unsigned char *`计算元素槽位。
+- 增加Classic CAN公共API和HXS320F28002x DCAN目标实现候选，覆盖polling、中断队列、远程帧、诊断和受控恢复原语。
+- 将泛型队列升级为Sequence型SPSC实现，并增加无符号Sequence回绕测试。
+- 为DCAN消息RAM初始化和IF1/IF2消息对象事务增加有界等待与超时返回。
 
 ### Validation
 

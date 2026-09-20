@@ -14,8 +14,21 @@
 #include <stdint.h>
 #include <string.h>
 
+/*
+ * The queue is used between interrupt and foreground contexts on a single
+ * core. The compiler barrier keeps payload copies on the correct side of the
+ * sequence publication. Multicore sharing requires a target-specific atomic
+ * implementation and is outside this queue's contract.
+ */
+#if defined(__GNUC__)
+#define HAL_QUEUE_COMPILER_BARRIER() __asm__ volatile ("" ::: "memory")
+#else
+#define HAL_QUEUE_COMPILER_BARRIER() ((void)0)
+#endif
+
 static HAL_Status_t validateHandle(HAL_QUEUE_Handle_t handle);
 static size_t advanceIndex(size_t index, size_t capacity);
+static size_t getCountSnapshot(HAL_QUEUE_Handle_t handle);
 
 HAL_Status_t
 HAL_QUEUE_init(HAL_QUEUE_Handle_t handle,
@@ -35,7 +48,8 @@ HAL_QUEUE_init(HAL_QUEUE_Handle_t handle,
     handle->capacity = capacity;
     handle->readIndex = 0U;
     handle->writeIndex = 0U;
-    handle->count = 0U;
+    handle->readSequence = 0U;
+    handle->writeSequence = 0U;
     handle->state = HAL_QUEUE_STATE_READY;
 
     return HAL_STATUS_OK;
@@ -53,7 +67,8 @@ HAL_QUEUE_clear(HAL_QUEUE_Handle_t handle)
 
     handle->readIndex = 0U;
     handle->writeIndex = 0U;
-    handle->count = 0U;
+    handle->readSequence = 0U;
+    handle->writeSequence = 0U;
 
     return HAL_STATUS_OK;
 }
@@ -75,7 +90,7 @@ HAL_QUEUE_push(HAL_QUEUE_Handle_t handle, const void *element)
         return status;
     }
 
-    if (handle->count == handle->capacity)
+    if (getCountSnapshot(handle) == handle->capacity)
     {
         return HAL_STATUS_FULL;
     }
@@ -84,7 +99,10 @@ HAL_QUEUE_push(HAL_QUEUE_Handle_t handle, const void *element)
                   (handle->writeIndex * handle->elementSize);
     (void)memcpy(destination, element, handle->elementSize);
     handle->writeIndex = advanceIndex(handle->writeIndex, handle->capacity);
-    handle->count++;
+
+    /* Publish the completed element only after its payload is visible. */
+    HAL_QUEUE_COMPILER_BARRIER();
+    handle->writeSequence++;
 
     return HAL_STATUS_OK;
 }
@@ -106,16 +124,21 @@ HAL_QUEUE_pop(HAL_QUEUE_Handle_t handle, void *element)
         return status;
     }
 
-    if (handle->count == 0U)
+    if (getCountSnapshot(handle) == 0U)
     {
         return HAL_STATUS_EMPTY;
     }
 
+    /* Observe the producer's payload after observing its publication. */
+    HAL_QUEUE_COMPILER_BARRIER();
     source = (const unsigned char *)handle->storage +
              (handle->readIndex * handle->elementSize);
     (void)memcpy(element, source, handle->elementSize);
     handle->readIndex = advanceIndex(handle->readIndex, handle->capacity);
-    handle->count--;
+
+    /* Release the consumed slot only after the copy has completed. */
+    HAL_QUEUE_COMPILER_BARRIER();
+    handle->readSequence++;
 
     return HAL_STATUS_OK;
 }
@@ -137,11 +160,12 @@ HAL_QUEUE_peek(HAL_QUEUE_Handle_t handle, void *element)
         return status;
     }
 
-    if (handle->count == 0U)
+    if (getCountSnapshot(handle) == 0U)
     {
         return HAL_STATUS_EMPTY;
     }
 
+    HAL_QUEUE_COMPILER_BARRIER();
     source = (const unsigned char *)handle->storage +
              (handle->readIndex * handle->elementSize);
     (void)memcpy(element, source, handle->elementSize);
@@ -165,7 +189,7 @@ HAL_QUEUE_getCount(HAL_QUEUE_Handle_t handle, size_t *count)
         return status;
     }
 
-    *count = handle->count;
+    *count = getCountSnapshot(handle);
 
     return HAL_STATUS_OK;
 }
@@ -186,7 +210,7 @@ HAL_QUEUE_getFreeCount(HAL_QUEUE_Handle_t handle, size_t *freeCount)
         return status;
     }
 
-    *freeCount = handle->capacity - handle->count;
+    *freeCount = handle->capacity - getCountSnapshot(handle);
 
     return HAL_STATUS_OK;
 }
@@ -207,7 +231,7 @@ HAL_QUEUE_isEmpty(HAL_QUEUE_Handle_t handle, bool *flagEmpty)
         return status;
     }
 
-    *flagEmpty = (handle->count == 0U);
+    *flagEmpty = (getCountSnapshot(handle) == 0U);
 
     return HAL_STATUS_OK;
 }
@@ -228,7 +252,7 @@ HAL_QUEUE_isFull(HAL_QUEUE_Handle_t handle, bool *flagFull)
         return status;
     }
 
-    *flagFull = (handle->count == handle->capacity);
+    *flagFull = (getCountSnapshot(handle) == handle->capacity);
 
     return HAL_STATUS_OK;
 }
@@ -247,7 +271,7 @@ validateHandle(HAL_QUEUE_Handle_t handle)
         (handle->capacity == 0U) ||
         (handle->readIndex >= handle->capacity) ||
         (handle->writeIndex >= handle->capacity) ||
-        (handle->count > handle->capacity))
+        (getCountSnapshot(handle) > handle->capacity))
     {
         return HAL_STATUS_INVALID_STATE;
     }
@@ -265,4 +289,17 @@ advanceIndex(size_t index, size_t capacity)
     }
 
     return index;
+}
+
+/**
+ * Returns a possibly transient but internally valid SPSC occupancy snapshot.
+ *
+ * Unsigned subtraction preserves the producer-consumer distance when the
+ * monotonic sequence values wrap. Only the producer advances writeSequence
+ * and only the consumer advances readSequence.
+ */
+static size_t
+getCountSnapshot(HAL_QUEUE_Handle_t handle)
+{
+    return handle->writeSequence - handle->readSequence;
 }

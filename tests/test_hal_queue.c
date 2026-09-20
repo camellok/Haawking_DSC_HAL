@@ -27,6 +27,7 @@ static void testInvalidArguments(void);
 static void testFifoAndWraparound(void);
 static void testClear(void);
 static void testGenericElementCopy(void);
+static void testSequenceWraparound(void);
 
 int
 main(void)
@@ -35,6 +36,7 @@ main(void)
     testFifoAndWraparound();
     testClear();
     testGenericElementCopy();
+    testSequenceWraparound();
 
     return 0;
 }
@@ -146,4 +148,31 @@ testGenericElementCopy(void)
     assert(output.payload[0] == input.payload[0]);
     assert(output.payload[1] == input.payload[1]);
     assert(output.payload[2] == input.payload[2]);
+}
+
+static void
+testSequenceWraparound(void)
+{
+    HAL_QUEUE_Obj queue = {0};
+    uint8_t storage[2] = {0U};
+    uint8_t input = 0x5AU;
+    uint8_t output = 0U;
+    size_t count = 0U;
+    bool flagEmpty = false;
+
+    assert(HAL_QUEUE_init(&queue, storage, sizeof(storage[0]), 2U) ==
+           HAL_STATUS_OK);
+
+    /* Model long-running SPSC use immediately before unsigned wrap. */
+    queue.readSequence = SIZE_MAX;
+    queue.writeSequence = SIZE_MAX;
+    assert(HAL_QUEUE_push(&queue, &input) == HAL_STATUS_OK);
+    assert(queue.writeSequence == 0U);
+    assert(HAL_QUEUE_getCount(&queue, &count) == HAL_STATUS_OK);
+    assert(count == 1U);
+    assert(HAL_QUEUE_pop(&queue, &output) == HAL_STATUS_OK);
+    assert(output == input);
+    assert(queue.readSequence == 0U);
+    assert(HAL_QUEUE_isEmpty(&queue, &flagEmpty) == HAL_STATUS_OK);
+    assert(flagEmpty == true);
 }
