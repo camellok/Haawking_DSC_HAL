@@ -55,7 +55,7 @@ static void HAL_CAN_setMailboxInterruptLine(uint32_t canBaseAddress,
  * 2. Convert physical bit timing to target-specific register encodings.
  * 3. Reset the controller and select its source clock.
  * 4. Configure bit timing, operating mode, and automatic retransmission.
- * 5. Save the accepted configuration and reset runtime diagnostics.
+ * 5. Reset runtime diagnostics and leave the controller stopped.
  *
  * Message objects are not configured here. The controller remains stopped;
  * HAL_CAN_start() owns the transition to bus communication.
@@ -145,7 +145,6 @@ HAL_CAN_init(HAL_CAN_Handle_t handle, const HAL_CAN_Config_t *config)
     /* Recovery timing is application policy; automatic Bus-on stays disabled. */
     CAN_disableAutoBusOn(handle->canBaseAddress);
 
-    handle->canConfiguration = *config;
     handle->canDiagnostics = (HAL_CAN_Diagnostics_t){0};
     handle->canDiagnostics.busState = HAL_CAN_BUS_STATE_STOPPED;
     handle->lastObservedBusState = HAL_CAN_BUS_STATE_STOPPED;
@@ -260,8 +259,6 @@ HAL_CAN_setAutoRetransmission(HAL_CAN_Handle_t handle, bool flagEnable)
     {
         CAN_disableRetry(handle->canBaseAddress);
     }
-
-    handle->canConfiguration.flagEnableAutoRetransmission = flagEnable;
 
     return HAL_STATUS_OK;
 }

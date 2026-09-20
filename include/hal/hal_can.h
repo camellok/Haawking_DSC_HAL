@@ -246,7 +246,6 @@ typedef struct
 typedef struct
 {
     uint32_t canBaseAddress;           /**< Controller instance supplied by the platform layer. */
-    HAL_CAN_Config_t canConfiguration; /**< Last controller configuration accepted by the HAL. */
     HAL_CAN_Diagnostics_t canDiagnostics; /**< Runtime state and diagnostic counters. */
     HAL_CAN_BusState_t lastObservedBusState; /**< Last running state used for edge counts. */
     HAL_QUEUE_Obj rxEventQueue;          /**< ISR-producer/foreground-consumer RX queue state. */
@@ -274,7 +273,8 @@ typedef HAL_CAN_Obj *HAL_CAN_Handle_t;
  * No hardware state is changed when validation fails.
  *
  * @param handle Runtime object bound to a supported CAN controller.
- * @param config Controller configuration expressed in physical timing values.
+ * @param config Controller configuration expressed in physical timing values;
+ *               read only during this call and never retained by the HAL.
  * @return HAL_STATUS_OK on success, HAL_STATUS_TIMEOUT when message-RAM
  *         initialization does not complete, otherwise a validation error.
  */

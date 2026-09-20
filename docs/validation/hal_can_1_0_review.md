@@ -45,9 +45,9 @@
 | `HAL_QUEUE_Obj` | 32 |
 | `HAL_CAN_RemoteResponseConfig_t` | 32 |
 | `HAL_CAN_Diagnostics_t` | 56 |
-| `HAL_CAN_Obj` | 164 |
+| `HAL_CAN_Obj` | 140 |
 
-队列常驻RAM还包括调用方提供的存储区：RX队列为`24 * capacity`字节，TX完成队列为`2 * capacity`字节。两者不在`HAL_CAN_Obj`的164字节内。
+队列常驻RAM还包括调用方提供的存储区：RX队列为`24 * capacity`字节，TX完成队列为`2 * capacity`字节。两者不在`HAL_CAN_Obj`的140字节内。冻结审查删除了对象中从未被运行期读取的`HAL_CAN_Config_t`副本，使每个CAN实例减少24字节；配置由platform持有并可放入Flash。
 
 ### 独立目标文件代码尺寸
 
@@ -73,6 +73,7 @@
 ## 当前实现风险判断
 
 - 所有公开运行期收发事务均有固定数据复制上限和IF等待上限；没有动态分配或递归。
+- `HAL_CAN_init()`只在调用期间读取配置，不复制到运行对象；运行期自动重发切换直接更新硬件，避免为不可查询的配置快照常驻24字节RAM。
 - `CAN_setupMessageObject()`内部仍是DriverLib无界等待，但HAL仅在控制器停止、单上下文条件下调用，并以IF1有界预检和提交后确认包围。若IF1在DriverLib调用期间发生硬件永久卡死，调用自身仍不能返回；这是冻结前需要保留的已知低概率启动期风险。
 - `hal_can_hw`仅覆盖DriverLib无法提供有界语义的DCAN操作，不作为其他外设HAL的强制分层模板。
 - SPSC队列要求严格的一生产者、一消费者和单核可见性；初始化、清空和重新绑定必须在双方停止时执行。
