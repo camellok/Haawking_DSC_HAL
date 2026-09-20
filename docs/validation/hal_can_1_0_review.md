@@ -13,7 +13,7 @@
 - DriverLib的无界消息RAM初始化已替换为目标私有有界事务；
 - DriverLib无界消息对象配置已替换为目标私有的单次有界IF1事务；
 - IF1用于前台TX事务，IF2用于RX/ISR事务，所有权边界明确；
-- `HAL_CAN_setAutoRetransmission()`同时更新硬件和配置快照；
+- `HAL_CAN_setAutoRetransmission()`直接更新硬件；HAL不保留不可查询的配置快照；
 - 唯一未实现公共接口`HAL_CAN_softReset()`具有明确的`UNSUPPORTED`和无副作用语义；
 - 通用队列升级为Sequence型SPSC，并保留满队列不覆盖旧数据的策略。
 
@@ -79,6 +79,7 @@
 - 初始化后的消息对象配置、polling和ISR路径均不调用含无界BUSY循环的DriverLib接口；直接寄存器访问集中在`hal_can_hw`并统一返回`HAL_STATUS_TIMEOUT`。
 - `hal_can_hw`仅覆盖DriverLib无法提供有界语义的DCAN操作，不作为其他外设HAL的强制分层模板。
 - SPSC队列要求严格的一生产者、一消费者和单核可见性；初始化、清空和重新绑定必须在双方停止时执行。
+- IF1要求单一串行前台所有者，Line 0与Line 1 ISR共享IF2并要求不可互相嵌套；多任务和嵌套中断宿主必须在HAL外提供仲裁。
 
 ## 冻结前门禁
 

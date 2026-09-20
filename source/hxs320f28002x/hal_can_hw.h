@@ -73,7 +73,10 @@ HAL_Status_t HAL_CAN_hwReadMessageObject(
     HAL_CAN_Frame_t *frame,
     bool *flagMessageLost);
 
-/** Clears one message-object interrupt through the ISR-owned IF2 set. */
+/**
+ * Clears one message-object interrupt through the ISR-owned IF2 set.
+ * All CAN ISRs using IF2 must be configured as mutually non-nesting.
+ */
 HAL_Status_t HAL_CAN_hwClearMessageInterrupt(
     uint32_t canBaseAddress,
     uint16_t mailboxObjIndex);
