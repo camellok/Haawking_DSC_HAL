@@ -283,13 +283,13 @@ HAL_Status_t HAL_CAN_init(HAL_CAN_Handle_t handle, const HAL_CAN_Config_t *confi
 /**
  * Requests a standalone controller reset operation.
  *
- * The HXS320F28002x backend returns HAL_STATUS_UNSUPPORTED because
- * HAL_CAN_init() already owns the complete reset-and-configure sequence and a
- * separate portable reset contract would need to define mailbox, queue, and
- * diagnostic preservation. No software or hardware state changes.
+ * A backend may return HAL_STATUS_UNSUPPORTED when HAL_CAN_init() already owns
+ * the complete reset-and-configure sequence and no portable mailbox, queue,
+ * and diagnostic preservation contract is available. An unsupported request
+ * has no software or hardware side effects.
  *
- * @param handle Initialized CAN runtime object; currently not inspected.
- * @return HAL_STATUS_UNSUPPORTED for the current backend.
+ * @param handle CAN runtime object associated with the reset request.
+ * @return HAL_STATUS_OK, HAL_STATUS_UNSUPPORTED, or a validation/state error.
  */
 HAL_Status_t HAL_CAN_softReset(HAL_CAN_Handle_t handle);
 
@@ -563,7 +563,7 @@ HAL_Status_t HAL_CAN_disableInterrupts(HAL_CAN_Handle_t handle);
 /**
  * Rearms all configured controller diagnostic sources after recovery.
  *
- * A status read first acknowledges stale DCAN status causes, then the
+ * A status read first acknowledges stale controller status causes, then the
  * configured ERROR and STATUS sources are enabled together. Message-object
  * interrupts remain unchanged.
  */
@@ -627,7 +627,7 @@ HAL_Status_t HAL_CAN_getTxCompleteEvent(HAL_CAN_Handle_t handle,
  * only bounded register access plus HAL semantic mapping. It may be
  * called directly by the target error ISR or by a foreground diagnostic
  * service. HAL_CAN_process() samples only while both diagnostic interrupt
- * sources are masked, so the ISR and foreground never consume the same DCAN
+ * sources are masked, so the ISR and foreground never consume the same
  * status cause.
  *
  * @param handle Initialized CAN runtime object.
