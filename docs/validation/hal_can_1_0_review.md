@@ -25,10 +25,62 @@
 | 全部TX取消 | 最多32个对象，每个对象最多三次IF1等待 |
 | 诊断采集 | 固定数量DriverLib寄存器读取和状态映射 |
 
+## 静态资源测量
+
+以下数据由HXS320F28002x目标编译器在`-O2`下获得，用于冻结候选的相对比较。目标文件代码尺寸尚未经过最终链接和未引用节裁剪，因此不能等同于应用最终Flash增量。
+
+### 目标ABI类型尺寸
+
+| 类型 | 字节数 |
+|---|---:|
+| `HAL_CAN_TxCompleteEvent_t` | 2 |
+| `HAL_CAN_BitTiming_t` | 10 |
+| `HAL_CAN_RemoteRequestConfig_t` | 16 |
+| `HAL_CAN_TxConfig_t` | 16 |
+| `HAL_CAN_Frame_t` | 20 |
+| `HAL_CAN_InterruptConfig_t` | 20 |
+| `HAL_CAN_RxConfig_t` | 20 |
+| `HAL_CAN_Config_t` | 24 |
+| `HAL_CAN_RxEvent_t` | 24 |
+| `HAL_QUEUE_Obj` | 32 |
+| `HAL_CAN_RemoteResponseConfig_t` | 32 |
+| `HAL_CAN_Diagnostics_t` | 56 |
+| `HAL_CAN_Obj` | 164 |
+
+队列常驻RAM还包括调用方提供的存储区：RX队列为`24 * capacity`字节，TX完成队列为`2 * capacity`字节。两者不在`HAL_CAN_Obj`的164字节内。
+
+### 独立目标文件代码尺寸
+
+| 目标文件 | `.text` | `.data` | `.bss` |
+|---|---:|---:|---:|
+| `hal_can.o` | 4532 | 0 | 0 |
+| `hal_can_hw.o` | 1432 | 0 | 0 |
+| CAN核心合计 | 5964 | 0 | 0 |
+| `hal_queue.o` | 842 | 0 | 0 |
+
+### 编译器静态直接栈帧
+
+| 范围 | 直接栈帧 |
+|---|---:|
+| `HAL_CAN_configureInterrupts()` | 224字节 |
+| `HAL_CAN_init()` | 144字节 |
+| `HAL_CAN_updateRemoteResponse()` | 64字节 |
+| 多数配置、收发和队列push/pop接口 | 48字节 |
+| 其余CAN硬件事务与简单接口 | 32字节 |
+
+这些数值来自编译器的逐函数静态报告，只表示单个函数的直接栈帧，不表示ISR嵌套或完整调用链峰值。最终ISR栈峰值必须在训练仓库集成构建后结合调用图或目标测量确认。
+
+## 当前实现风险判断
+
+- 所有公开运行期收发事务均有固定数据复制上限和IF等待上限；没有动态分配或递归。
+- `CAN_setupMessageObject()`内部仍是DriverLib无界等待，但HAL仅在控制器停止、单上下文条件下调用，并以IF1有界预检和提交后确认包围。若IF1在DriverLib调用期间发生硬件永久卡死，调用自身仍不能返回；这是冻结前需要保留的已知低概率启动期风险。
+- `hal_can_hw`仅覆盖DriverLib无法提供有界语义的DCAN操作，不作为其他外设HAL的强制分层模板。
+- SPSC队列要求严格的一生产者、一消费者和单核可见性；初始化、清空和重新绑定必须在双方停止时执行。
+
 ## 冻结前门禁
 
 - 使用目标周期计数确认RAM初始化和IF1/IF2等待上限；
-- 记录目标ABI下公共类型、HAL对象、队列和ISR栈尺寸；
+- 在训练仓库集成构建中记录最终链接尺寸和ISR完整调用链峰值；
 - 训练仓库通过submodule固定候选commit并完成P2-L01至P2-L07构建与上板回归；
 - 对常用可测分支补充扩展帧TX、零DLC、队列满、Silent和Loopback+Silent验证；
 - 更新最终能力矩阵、commit、工具链版本和未验证边界。
