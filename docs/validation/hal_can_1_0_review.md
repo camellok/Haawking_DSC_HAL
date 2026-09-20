@@ -79,7 +79,7 @@
 
 ## 冻结前门禁
 
-- 使用目标周期计数确认RAM初始化和IF1/IF2等待上限；
+- 按[目标时序验证](hal_can_1_0_target_timing.md)使用目标周期计数确认RAM初始化和IF1/IF2等待上限；
 - 在训练仓库集成构建中记录最终链接尺寸和ISR完整调用链峰值；
 - 训练仓库通过submodule固定候选commit并完成P2-L01至P2-L07构建与上板回归；
 - 对常用可测分支补充扩展帧TX、零DLC、队列满、Silent和Loopback+Silent验证；
