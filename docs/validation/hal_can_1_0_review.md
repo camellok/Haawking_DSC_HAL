@@ -4,6 +4,8 @@
 > 候选来源：Haawking_DSC_Training_CANopen P2-L07  
 > 目标：HXS320F28002x DCAN
 
+公共接口必要性、实现状态和证据边界见[能力与接口矩阵](hal_can_1_0_capability_matrix.md)。
+
 ## 已完成静态审查
 
 - 公共头文件不依赖DriverLib，运行期不使用动态内存；
