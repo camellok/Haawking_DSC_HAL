@@ -143,23 +143,20 @@ HAL_CAN_hwCancelTransmitRequests(uint32_t canBaseAddress,
 }
 
 HAL_Status_t
-HAL_CAN_hwConfigureRemoteRequestDlc(uint32_t canBaseAddress,
-                                    uint16_t mailboxObjIndex,
-                                    uint8_t dlc)
+HAL_CAN_hwSetupMessageObject(uint32_t canBaseAddress,
+                             uint16_t mailboxObjIndex,
+                             uint32_t identifier,
+                             uint32_t filterMask,
+                             HAL_CAN_IdType_t idType,
+                             HAL_CAN_HwMessageRole_t role,
+                             uint8_t dlc,
+                             bool flagEnableInterrupt)
 {
     HAL_Status_t status;
-    uint32_t messageControl;
-
-    /* Commit the preceding DriverLib setup transfer before reusing IF1. */
-    status = HAL_CAN_hwWaitIf1Ready(canBaseAddress);
-    if (status != HAL_STATUS_OK)
-    {
-        return status;
-    }
-
-    HWREG(canBaseAddress + CAN_O_IF1CMD) =
-        CAN_IF1CMD_CONTROL |
-        ((uint32_t)mailboxObjIndex & CAN_IF1CMD_MSG_NUM_M);
+    uint32_t arbitration = 0U;
+    uint32_t mask = 0U;
+    uint32_t messageControl = CAN_IF1MCTL_EOB;
+    bool flagUseFilter = false;
 
     status = HAL_CAN_hwWaitIf1Ready(canBaseAddress);
     if (status != HAL_STATUS_OK)
@@ -167,13 +164,89 @@ HAL_CAN_hwConfigureRemoteRequestDlc(uint32_t canBaseAddress,
         return status;
     }
 
-    messageControl = HWREG(canBaseAddress + CAN_O_IF1MCTL);
-    messageControl &= ~(uint32_t)CAN_IF1MCTL_DLC_M;
-    messageControl |= (uint32_t)dlc & CAN_IF1MCTL_DLC_M;
+    switch (role)
+    {
+        case HAL_CAN_HW_MESSAGE_ROLE_RX_DATA:
+            flagUseFilter = true;
+            if (flagEnableInterrupt == true)
+            {
+                messageControl |= CAN_IF1MCTL_RXIE;
+            }
+            break;
+
+        case HAL_CAN_HW_MESSAGE_ROLE_TX_DATA:
+            arbitration = CAN_IF1ARB_DIR;
+            messageControl |= (uint32_t)dlc & CAN_IF1MCTL_DLC_M;
+            if (flagEnableInterrupt == true)
+            {
+                messageControl |= CAN_IF1MCTL_TXIE;
+            }
+            break;
+
+        case HAL_CAN_HW_MESSAGE_ROLE_TX_REMOTE_REQUEST:
+            messageControl |= (uint32_t)dlc & CAN_IF1MCTL_DLC_M;
+            if (flagEnableInterrupt == true)
+            {
+                messageControl |= CAN_IF1MCTL_TXIE;
+            }
+            break;
+
+        case HAL_CAN_HW_MESSAGE_ROLE_REMOTE_RESPONSE:
+            arbitration = CAN_IF1ARB_DIR;
+            flagUseFilter = true;
+            messageControl |= CAN_IF1MCTL_RMTEN |
+                              CAN_IF1MCTL_UMASK |
+                              ((uint32_t)dlc & CAN_IF1MCTL_DLC_M);
+            if (flagEnableInterrupt == true)
+            {
+                messageControl |= CAN_IF1MCTL_TXIE;
+            }
+            break;
+
+        default:
+            return HAL_STATUS_INVALID_ARGUMENT;
+    }
+
+    switch (idType)
+    {
+        case HAL_CAN_ID_TYPE_STANDARD:
+            arbitration |= ((identifier << CAN_IF1ARB_STD_ID_S) &
+                            CAN_IF1ARB_STD_ID_M) |
+                           CAN_IF1ARB_MSGVAL;
+            if (flagUseFilter == true)
+            {
+                mask = (filterMask << CAN_IF1ARB_STD_ID_S) &
+                       CAN_IF1ARB_STD_ID_M;
+            }
+            break;
+
+        case HAL_CAN_ID_TYPE_EXTENDED:
+            arbitration |= (identifier & CAN_IF1ARB_ID_M) |
+                           CAN_IF1ARB_MSGVAL |
+                           CAN_IF1ARB_XTD;
+            if (flagUseFilter == true)
+            {
+                mask = filterMask & CAN_IF1MSK_MSK_M;
+            }
+            break;
+
+        default:
+            return HAL_STATUS_INVALID_ARGUMENT;
+    }
+
+    if (flagUseFilter == true)
+    {
+        mask |= CAN_IF1MSK_MXTD | CAN_IF1MSK_MDIR;
+        messageControl |= CAN_IF1MCTL_UMASK;
+    }
+
+    HWREG(canBaseAddress + CAN_O_IF1MSK) = mask;
+    HWREG(canBaseAddress + CAN_O_IF1ARB) = arbitration;
     HWREG(canBaseAddress + CAN_O_IF1MCTL) = messageControl;
-
     HWREG(canBaseAddress + CAN_O_IF1CMD) =
         CAN_IF1CMD_DIR |
+        CAN_IF1CMD_MASK |
+        CAN_IF1CMD_ARB |
         CAN_IF1CMD_CONTROL |
         ((uint32_t)mailboxObjIndex & CAN_IF1CMD_MSG_NUM_M);
 

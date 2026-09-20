@@ -1,6 +1,6 @@
 # Classic CAN HAL
 
-`HAL_CAN`提供与协议无关的Classic CAN控制器能力。公共接口不包含DriverLib类型；HXS320F28002x目标实现使用DriverLib完成常规配置，仅在DriverLib存在无界等待或无法表达消息对象事务时由私有`hal_can_hw`执行窄范围寄存器访问。
+`HAL_CAN`提供与协议无关的Classic CAN控制器能力。公共接口不包含DriverLib类型；HXS320F28002x目标实现使用DriverLib完成常规控制器操作，仅在DriverLib存在无界等待或无法表达消息对象事务时由私有`hal_can_hw`执行窄范围寄存器访问。
 
 ## 职责边界
 
@@ -17,7 +17,7 @@
 
 ## 有界事务
 
-目标DriverLib的RAM初始化和部分消息对象接口包含无界等待。目标私有实现对RAM初始化及IF1/IF2运行期事务施加上界；DriverLib消息对象配置只在控制器停止、单上下文并且IF1已经通过有界预检时调用，并在返回后确认提交完成。
+目标DriverLib的RAM初始化和消息对象配置接口包含无界等待。目标私有实现对RAM初始化以及全部IF1/IF2消息对象事务施加上界；配置、polling和ISR不再进入DriverLib的无界消息对象路径。普通时钟、模式、中断门控和诊断寄存器访问仍直接使用DriverLib。
 
 当前迭代上限仍须由HXS320F28002x目标测量记录确认。在证据完成前，代码属于`HAL_CAN-1.0`冻结候选，不宣称已经完成量产时序验证。
 
@@ -25,7 +25,7 @@
 
 HXS320F28002x目标ABI下，`HAL_CAN_Obj`为140字节，`HAL_CAN_Frame_t`为20字节，`HAL_CAN_RxEvent_t`为24字节。HAL不保存控制器配置副本；platform可把配置放入Flash，并只在初始化调用期间传入。RX事件队列的主要可配置RAM成本为`24 * capacity`字节，TX完成事件为`2 * capacity`字节；应用应根据最大允许服务间隔和总线负载选择队列深度，不为每个硬件消息对象常驻分配Frame。
 
-候选版本在`-O2`下的CAN核心独立目标文件`.text`合计为5914字节，公共队列实现为842字节。最终应用尺寸取决于链接裁剪和实际引用接口，完整测量条件与栈帧数据见[冻结候选评审记录](validation/hal_can_1_0_review.md)。
+候选版本在`-O2`下的CAN核心独立目标文件`.text`合计为5890字节，公共队列实现为842字节。最终应用尺寸取决于链接裁剪和实际引用接口，完整测量条件与栈帧数据见[冻结候选评审记录](validation/hal_can_1_0_review.md)。
 
 ## 可选与未验证能力
 

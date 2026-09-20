@@ -36,7 +36,6 @@ static HAL_Status_t
 HAL_CAN_validateInterruptConfig(const HAL_CAN_InterruptConfig_t *config);
 static HAL_Status_t HAL_CAN_validateRxConfig(const HAL_CAN_RxConfig_t *config);
 static HAL_Status_t HAL_CAN_validateTxConfig(const HAL_CAN_TxConfig_t *config);
-static HAL_Status_t HAL_CAN_prepareMessageObjectSetup(HAL_CAN_Handle_t handle);
 static HAL_Status_t
 HAL_CAN_validateRemoteRequestConfig(const HAL_CAN_RemoteRequestConfig_t *config);
 static HAL_Status_t
@@ -361,8 +360,6 @@ HAL_Status_t
 HAL_CAN_configureRx(HAL_CAN_Handle_t handle, const HAL_CAN_RxConfig_t *config)
 {
     HAL_Status_t status;
-    CAN_MsgFrameType frameType;
-    uint32_t messageObjectFlags;
 
     if ((handle == NULL) || (config == NULL))
     {
@@ -386,53 +383,41 @@ HAL_CAN_configureRx(HAL_CAN_Handle_t handle, const HAL_CAN_RxConfig_t *config)
         return status;
     }
 
-    status = HAL_CAN_prepareMessageObjectSetup(handle);
-    if (status != HAL_STATUS_OK)
-    {
-        return status;
-    }
-
-    switch (config->idType)
-    {
-        case HAL_CAN_ID_TYPE_STANDARD:
-            frameType = CAN_MSG_FRAME_STD;
-            break;
-
-        case HAL_CAN_ID_TYPE_EXTENDED:
-            frameType = CAN_MSG_FRAME_EXT;
-            break;
-
-        default:
-            return HAL_STATUS_INVALID_ARGUMENT;
-    }
-
-    messageObjectFlags = CAN_MSG_OBJ_USE_ID_FILTER |
-                         CAN_MSG_OBJ_USE_EXT_FILTER |
-                         CAN_MSG_OBJ_USE_DIR_FILTER;
-
     if (config->flagEnableInterrupt == true)
     {
         if (handle->rxEventQueue.state != HAL_QUEUE_STATE_READY)
         {
             return HAL_STATUS_NO_RESOURCE;
         }
+    }
 
-        messageObjectFlags |= CAN_MSG_OBJ_RX_INT_ENABLE;
+    status = HAL_CAN_hwSetupMessageObject(
+        handle->canBaseAddress,
+        config->mailboxObjIndex,
+        config->identifier,
+        config->filterMask,
+        config->idType,
+        HAL_CAN_HW_MESSAGE_ROLE_RX_DATA,
+        0U,
+        config->flagEnableInterrupt);
+    if (status != HAL_STATUS_OK)
+    {
+        if (status == HAL_STATUS_TIMEOUT)
+        {
+            handle->canDiagnostics.transactionTimeoutCount++;
+        }
+
+        return status;
+    }
+
+    if (config->flagEnableInterrupt == true)
+    {
         HAL_CAN_setMailboxInterruptLine(handle->canBaseAddress,
                                         config->mailboxObjIndex,
                                         false);
     }
 
-    CAN_setupMessageObject(handle->canBaseAddress,
-                           config->mailboxObjIndex,
-                           config->identifier,
-                           frameType,
-                           CAN_MSG_OBJ_TYPE_RX,
-                           config->filterMask,
-                           messageObjectFlags,
-                           0U);
-
-    return HAL_CAN_prepareMessageObjectSetup(handle);
+    return HAL_STATUS_OK;
 }
 
 /**
@@ -447,8 +432,6 @@ HAL_Status_t
 HAL_CAN_configureTx(HAL_CAN_Handle_t handle, const HAL_CAN_TxConfig_t *config)
 {
     HAL_Status_t status;
-    CAN_MsgFrameType frameType;
-    uint32_t messageObjectFlags = CAN_MSG_OBJ_NO_FLAGS;
 
     if ((handle == NULL) || (config == NULL))
     {
@@ -472,49 +455,41 @@ HAL_CAN_configureTx(HAL_CAN_Handle_t handle, const HAL_CAN_TxConfig_t *config)
         return status;
     }
 
-    status = HAL_CAN_prepareMessageObjectSetup(handle);
-    if (status != HAL_STATUS_OK)
-    {
-        return status;
-    }
-
-    switch (config->idType)
-    {
-        case HAL_CAN_ID_TYPE_STANDARD:
-            frameType = CAN_MSG_FRAME_STD;
-            break;
-
-        case HAL_CAN_ID_TYPE_EXTENDED:
-            frameType = CAN_MSG_FRAME_EXT;
-            break;
-
-        default:
-            return HAL_STATUS_INVALID_ARGUMENT;
-    }
-
     if (config->flagEnableInterrupt == true)
     {
         if (handle->txCompleteEventQueue.state != HAL_QUEUE_STATE_READY)
         {
             return HAL_STATUS_NO_RESOURCE;
         }
+    }
 
-        messageObjectFlags |= CAN_MSG_OBJ_TX_INT_ENABLE;
+    status = HAL_CAN_hwSetupMessageObject(
+        handle->canBaseAddress,
+        config->mailboxObjIndex,
+        config->identifier,
+        0U,
+        config->idType,
+        HAL_CAN_HW_MESSAGE_ROLE_TX_DATA,
+        config->dlc,
+        config->flagEnableInterrupt);
+    if (status != HAL_STATUS_OK)
+    {
+        if (status == HAL_STATUS_TIMEOUT)
+        {
+            handle->canDiagnostics.transactionTimeoutCount++;
+        }
+
+        return status;
+    }
+
+    if (config->flagEnableInterrupt == true)
+    {
         HAL_CAN_setMailboxInterruptLine(handle->canBaseAddress,
                                         config->mailboxObjIndex,
                                         true);
     }
 
-    CAN_setupMessageObject(handle->canBaseAddress,
-                           config->mailboxObjIndex,
-                           config->identifier,
-                           frameType,
-                           CAN_MSG_OBJ_TYPE_TX,
-                           0U,
-                           messageObjectFlags,
-                           config->dlc);
-
-    return HAL_CAN_prepareMessageObjectSetup(handle);
+    return HAL_STATUS_OK;
 }
 
 /**
@@ -523,13 +498,9 @@ HAL_CAN_configureTx(HAL_CAN_Handle_t handle, const HAL_CAN_TxConfig_t *config)
  * Implementation outline:
  * 1. Validate the handle, supported controller instance, lifecycle state, and
  *    caller-owned remote-request configuration.
- * 2. Convert the HAL identifier format to the DriverLib frame format.
- * 3. Configure a CAN_MSG_OBJ_TYPE_TX_REMOTE object without identifier filters
- *    or a transmit request; configuration alone must not place an RTR frame on
- *    the bus.
- * 4. Preserve the configured RTR DLC through a private IF1 control transfer.
- *    The target DriverLib setup routine does not write msgLen for a
- *    CAN_MSG_OBJ_TYPE_TX_REMOTE object.
+ * 2. Configure a remote-request object with the fixed identifier and DLC
+ *    through one bounded IF1 transaction. Configuration does not set TXRQST
+ *    and therefore cannot place an RTR frame on the bus.
  *
  * The HAL does not retain the configuration pointer. A separate data-frame RX
  * object is required when software must receive the remote response. Because
@@ -540,8 +511,6 @@ HAL_Status_t
 HAL_CAN_configureRemoteRequest(HAL_CAN_Handle_t handle, const HAL_CAN_RemoteRequestConfig_t *config)
 {
     HAL_Status_t status;
-    CAN_MsgFrameType frameType;
-    uint32_t messageObjectFlags = CAN_MSG_OBJ_NO_FLAGS;
 
     if ((handle == NULL) || (config == NULL))
     {
@@ -565,26 +534,6 @@ HAL_CAN_configureRemoteRequest(HAL_CAN_Handle_t handle, const HAL_CAN_RemoteRequ
         return status;
     }
 
-    status = HAL_CAN_prepareMessageObjectSetup(handle);
-    if (status != HAL_STATUS_OK)
-    {
-        return status;
-    }
-
-    switch (config->idType)
-    {
-        case HAL_CAN_ID_TYPE_STANDARD:
-            frameType = CAN_MSG_FRAME_STD;
-            break;
-
-        case HAL_CAN_ID_TYPE_EXTENDED:
-            frameType = CAN_MSG_FRAME_EXT;
-            break;
-
-        default:
-            return HAL_STATUS_INVALID_ARGUMENT;
-    }
-
     if (config->flagEnableInterrupt == true)
     {
         if (handle->txCompleteEventQueue.state != HAL_QUEUE_STATE_READY)
@@ -592,24 +541,17 @@ HAL_CAN_configureRemoteRequest(HAL_CAN_Handle_t handle, const HAL_CAN_RemoteRequ
             return HAL_STATUS_NO_RESOURCE;
         }
 
-        messageObjectFlags |= CAN_MSG_OBJ_TX_INT_ENABLE;
-        HAL_CAN_setMailboxInterruptLine(handle->canBaseAddress,
-                                        config->mailboxObjIndex,
-                                        true);
     }
 
-    CAN_setupMessageObject(handle->canBaseAddress,
-                           config->mailboxObjIndex,
-                           config->identifier,
-                           frameType,
-                           CAN_MSG_OBJ_TYPE_TX_REMOTE,
-                           0U,
-                           messageObjectFlags,
-                           0U);
-
-    status = HAL_CAN_hwConfigureRemoteRequestDlc(handle->canBaseAddress,
-                                                 config->mailboxObjIndex,
-                                                 config->dlc);
+    status = HAL_CAN_hwSetupMessageObject(
+        handle->canBaseAddress,
+        config->mailboxObjIndex,
+        config->identifier,
+        0U,
+        config->idType,
+        HAL_CAN_HW_MESSAGE_ROLE_TX_REMOTE_REQUEST,
+        config->dlc,
+        config->flagEnableInterrupt);
     if (status != HAL_STATUS_OK)
     {
         if (status == HAL_STATUS_TIMEOUT)
@@ -618,6 +560,13 @@ HAL_CAN_configureRemoteRequest(HAL_CAN_Handle_t handle, const HAL_CAN_RemoteRequ
         }
 
         return status;
+    }
+
+    if (config->flagEnableInterrupt == true)
+    {
+        HAL_CAN_setMailboxInterruptLine(handle->canBaseAddress,
+                                        config->mailboxObjIndex,
+                                        true);
     }
 
     return HAL_STATUS_OK;
@@ -698,13 +647,11 @@ HAL_CAN_requestRemote(HAL_CAN_Handle_t handle, uint16_t mailboxObjIndex)
  * Implementation outline:
  * 1. Validate the handle, supported controller instance, lifecycle state, and
  *    caller-owned remote-response configuration.
- * 2. Convert the HAL identifier format to the DriverLib frame format and adapt
- *    the initial byte payload to the target register representation.
- * 3. Configure a CAN_MSG_OBJ_TYPE_RXTX_REMOTE object with identifier, extended
- *    format, and direction filtering so that only matching RTR frames trigger
- *    the automatic response.
- * 4. Preload the initial response through an IF1 data-only transfer. Do not use
- *    CAN_sendMessage(), because it also sets TXRQST and could schedule an
+ * 2. Configure the bounded target message-object transaction with identifier,
+ *    format, and direction filtering so only matching RTR frames trigger the
+ *    automatic response.
+ * 3. Preload the initial response through an IF1 data-only transfer. Do not use
+ *    the ordinary send path, because it sets TXRQST and could schedule an
  *    unsolicited data frame when the controller starts.
  *
  * The complete operation is performed while the controller is stopped. The
@@ -715,8 +662,6 @@ HAL_CAN_configureRemoteResponse(HAL_CAN_Handle_t handle,
                                 const HAL_CAN_RemoteResponseConfig_t *config)
 {
     HAL_Status_t status;
-    CAN_MsgFrameType frameType;
-    uint32_t messageObjectFlags;
 
     if ((handle == NULL) || (config == NULL))
     {
@@ -740,51 +685,39 @@ HAL_CAN_configureRemoteResponse(HAL_CAN_Handle_t handle,
         return status;
     }
 
-    status = HAL_CAN_prepareMessageObjectSetup(handle);
-    if (status != HAL_STATUS_OK)
-    {
-        return status;
-    }
-
-    switch (config->idType)
-    {
-        case HAL_CAN_ID_TYPE_STANDARD:
-            frameType = CAN_MSG_FRAME_STD;
-            break;
-
-        case HAL_CAN_ID_TYPE_EXTENDED:
-            frameType = CAN_MSG_FRAME_EXT;
-            break;
-
-        default:
-            return HAL_STATUS_INVALID_ARGUMENT;
-    }
-
-    messageObjectFlags = CAN_MSG_OBJ_USE_ID_FILTER |
-                         CAN_MSG_OBJ_USE_EXT_FILTER |
-                         CAN_MSG_OBJ_USE_DIR_FILTER;
-
     if (config->flagEnableInterrupt == true)
     {
         if (handle->txCompleteEventQueue.state != HAL_QUEUE_STATE_READY)
         {
             return HAL_STATUS_NO_RESOURCE;
         }
+    }
 
-        messageObjectFlags |= CAN_MSG_OBJ_TX_INT_ENABLE;
+    status = HAL_CAN_hwSetupMessageObject(
+        handle->canBaseAddress,
+        config->mailboxObjIndex,
+        config->identifier,
+        config->filterMask,
+        config->idType,
+        HAL_CAN_HW_MESSAGE_ROLE_REMOTE_RESPONSE,
+        config->dlc,
+        config->flagEnableInterrupt);
+    if (status != HAL_STATUS_OK)
+    {
+        if (status == HAL_STATUS_TIMEOUT)
+        {
+            handle->canDiagnostics.transactionTimeoutCount++;
+        }
+
+        return status;
+    }
+
+    if (config->flagEnableInterrupt == true)
+    {
         HAL_CAN_setMailboxInterruptLine(handle->canBaseAddress,
                                         config->mailboxObjIndex,
                                         true);
     }
-
-    CAN_setupMessageObject(handle->canBaseAddress,
-                           config->mailboxObjIndex,
-                           config->identifier,
-                           frameType,
-                           CAN_MSG_OBJ_TYPE_RXTX_REMOTE,
-                           config->filterMask,
-                           messageObjectFlags,
-                           config->dlc);
 
     status = HAL_CAN_hwWriteMessageData(handle->canBaseAddress,
                                        config->mailboxObjIndex,
@@ -1594,26 +1527,6 @@ HAL_CAN_getDiagnostics(HAL_CAN_Handle_t handle, HAL_CAN_Diagnostics_t *diagnosti
 }
 
 /* Private helper functions. */
-
-/**
- * @brief Makes the DriverLib message-object setup precondition bounded.
- *
- * CAN_setupMessageObject() contains an unbounded IF1 BUSY loop. Setup is a
- * stopped-controller, single-context operation, so this preflight guarantees
- * that the DriverLib call enters with IF1 idle.
- */
-static HAL_Status_t
-HAL_CAN_prepareMessageObjectSetup(HAL_CAN_Handle_t handle)
-{
-    HAL_Status_t status = HAL_CAN_hwWaitIf1Ready(handle->canBaseAddress);
-
-    if (status == HAL_STATUS_TIMEOUT)
-    {
-        handle->canDiagnostics.transactionTimeoutCount++;
-    }
-
-    return status;
-}
 
 /**
  * @brief Routes one message-object interrupt to the fixed HAL event line.

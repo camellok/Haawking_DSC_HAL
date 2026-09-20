@@ -370,7 +370,8 @@ HAL_Status_t HAL_CAN_getTxPending(HAL_CAN_Handle_t handle,
  *
  * @param handle Initialized CAN runtime object in HAL_CAN_STATE_STOPPED.
  * @param config Fixed receive-object configuration.
- * @return HAL_STATUS_OK on success or a validation/state error.
+ * @return HAL_STATUS_OK on success, HAL_STATUS_TIMEOUT when the bounded
+ *         hardware transaction does not complete, or a validation/state error.
  */
 HAL_Status_t HAL_CAN_configureRx(HAL_CAN_Handle_t handle, const HAL_CAN_RxConfig_t *config);
 
@@ -382,7 +383,8 @@ HAL_Status_t HAL_CAN_configureRx(HAL_CAN_Handle_t handle, const HAL_CAN_RxConfig
  *
  * @param handle Initialized CAN runtime object in HAL_CAN_STATE_STOPPED.
  * @param config Fixed transmit-object configuration.
- * @return HAL_STATUS_OK on success or a validation/state error.
+ * @return HAL_STATUS_OK on success, HAL_STATUS_TIMEOUT when the bounded
+ *         hardware transaction does not complete, or a validation/state error.
  */
 HAL_Status_t HAL_CAN_configureTx(HAL_CAN_Handle_t handle, const HAL_CAN_TxConfig_t *config);
 

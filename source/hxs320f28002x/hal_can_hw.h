@@ -22,6 +22,15 @@
  * hal_can.c and the target ISR integration.
  */
 
+/** Message-object roles required by the portable CAN HAL. */
+typedef enum
+{
+    HAL_CAN_HW_MESSAGE_ROLE_RX_DATA = 0,
+    HAL_CAN_HW_MESSAGE_ROLE_TX_DATA,
+    HAL_CAN_HW_MESSAGE_ROLE_TX_REMOTE_REQUEST,
+    HAL_CAN_HW_MESSAGE_ROLE_REMOTE_RESPONSE
+} HAL_CAN_HwMessageRole_t;
+
 /** Initializes DCAN message RAM and reset state with a bounded wait. */
 HAL_Status_t HAL_CAN_hwInitializeModule(uint32_t canBaseAddress);
 
@@ -34,15 +43,21 @@ HAL_Status_t HAL_CAN_hwCancelTransmitRequests(
     uint32_t pendingRequestMask);
 
 /**
- * Applies the RTR DLC omitted by the target DriverLib TX-remote setup path.
+ * Configures one complete message object through a bounded IF1 transaction.
  *
- * This is a stopped-controller configuration transaction through IF1. It
- * changes only the selected message object's DLC and never sets TXRQST.
+ * This replaces the target DriverLib setup routine because that routine waits
+ * indefinitely for IF1. The caller must validate all public configuration and
+ * keep the controller stopped while this operation executes.
  */
-HAL_Status_t HAL_CAN_hwConfigureRemoteRequestDlc(
+HAL_Status_t HAL_CAN_hwSetupMessageObject(
     uint32_t canBaseAddress,
     uint16_t mailboxObjIndex,
-    uint8_t dlc);
+    uint32_t identifier,
+    uint32_t filterMask,
+    HAL_CAN_IdType_t idType,
+    HAL_CAN_HwMessageRole_t role,
+    uint8_t dlc,
+    bool flagEnableInterrupt);
 
 /**
  * Reads and releases one RX message object through the ISR/polling-owned IF2.
