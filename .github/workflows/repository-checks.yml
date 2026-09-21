@@ -32,3 +32,16 @@ jobs:
             tests/test_hal_queue.c \
             -o "$RUNNER_TEMP/test_hal_queue"
           "$RUNNER_TEMP/test_hal_queue"
+
+      - name: Check public headers and C linkage from C++
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror \
+            -Iinclude \
+            -c tests/test_hal_can_c_linkage.c \
+            -o "$RUNNER_TEMP/test_hal_can_c_linkage.o"
+          c++ -std=c++11 -Wall -Wextra -Werror \
+            -Iinclude \
+            tests/test_public_headers.cpp \
+            "$RUNNER_TEMP/test_hal_can_c_linkage.o" \
+            -o "$RUNNER_TEMP/test_public_headers"
+          "$RUNNER_TEMP/test_public_headers"

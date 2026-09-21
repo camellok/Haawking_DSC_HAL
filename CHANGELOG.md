@@ -19,10 +19,12 @@
 - 增加Classic CAN公共API和HXS320F28002x DCAN目标实现候选，覆盖polling、中断队列、远程帧、诊断和受控恢复原语。
 - 将泛型队列升级为Sequence型SPSC实现，并增加无符号Sequence回绕测试。
 - 为DCAN消息RAM初始化和IF1/IF2消息对象事务增加有界等待与超时返回。
+- 增加公共HAL头文件的C++语法门禁，并补齐CAN公共头的C linkage保护。
 
 ### Validation
 
 - 仓库静态检查：通过。
 - 使用最小DriverLib声明进行GCC严格语法检查：通过。
-- 宿主工程编译：待验证。
+- 训练仓库P2-L01至P2-L07完整ELF/HEX构建：通过。
+- P2-L06与P2-L07 CAN ISR静态调用链栈上界：已记录。
 - HXS320F280025C上板测试：待验证。

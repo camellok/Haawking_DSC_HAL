@@ -8,7 +8,7 @@ from typing import List
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE_SUFFIXES = {".c", ".h"}
+SOURCE_SUFFIXES = {".c", ".cpp", ".h"}
 FORBIDDEN_SUFFIXES = {".a", ".elf", ".hex", ".lib", ".o", ".obj", ".out"}
 SPDX_LINE = "SPDX-License-Identifier: Apache-2.0"
 COPYRIGHT_LINE = "Copyright (c) 2019-2026, Beijing Haawking Technology Co., Ltd"

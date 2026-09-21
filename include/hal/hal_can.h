@@ -19,6 +19,11 @@
 #include "hal_queue.h"
 #include "hal_status.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /* Controller lifecycle types. */
 
 /** CAN controller operating or test mode selected during initialization. */
@@ -656,5 +661,9 @@ void HAL_CAN_process(HAL_CAN_Handle_t handle);
  * @param diagnostics Destination for a coherent diagnostic snapshot.
  */
 void HAL_CAN_getDiagnostics(HAL_CAN_Handle_t handle, HAL_CAN_Diagnostics_t *diagnostics);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* HAL_CAN_H_ */
