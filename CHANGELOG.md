@@ -20,6 +20,7 @@
 - 将泛型队列升级为Sequence型SPSC实现，并增加无符号Sequence回绕测试。
 - 为DCAN消息RAM初始化和IF1/IF2消息对象事务增加有界等待与超时返回。
 - 增加公共HAL头文件的C++语法门禁，并补齐CAN公共头的C linkage保护。
+- 收紧CAN实例零初始化与重初始化契约，硬件初始化超时后保留安全的未初始化软件状态。
 
 ### Validation
 

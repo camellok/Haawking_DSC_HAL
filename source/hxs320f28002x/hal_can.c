@@ -85,6 +85,13 @@ HAL_CAN_init(HAL_CAN_Handle_t handle, const HAL_CAN_Config_t *config)
         return status;
     }
 
+    if (((handle->controllerState != HAL_CAN_STATE_UNINITIALIZED) &&
+         (handle->controllerState != HAL_CAN_STATE_STOPPED)) ||
+        (handle->flagInterruptsEnabled == true))
+    {
+        return HAL_STATUS_INVALID_STATE;
+    }
+
     /* Convert physical timing values to the DCAN register encodings. */
     driverPrescaler = (uint32_t)config->bitTiming.prescaler - 1U;
     driverPrescalerExtension = driverPrescaler / HAL_CAN_DCAN_BRP_FIELD_SIZE;
@@ -94,10 +101,29 @@ HAL_CAN_init(HAL_CAN_Handle_t handle, const HAL_CAN_Config_t *config)
     driverTimeSegment2 = (uint32_t)config->bitTiming.phaseSegment2Tq - 1U;
     driverSyncJumpWidth = (uint32_t)config->bitTiming.syncJumpWidthTq - 1U;
 
+    /*
+     * Enter a safe software state before the first hardware mutation. This
+     * also makes a bounded message-RAM timeout discard stale state from a
+     * previous stopped configuration instead of leaving it apparently usable.
+     */
+    handle->canDiagnostics = (HAL_CAN_Diagnostics_t){0};
+    handle->canDiagnostics.busState = HAL_CAN_BUS_STATE_STOPPED;
+    handle->lastObservedBusState = HAL_CAN_BUS_STATE_STOPPED;
+    handle->rxEventQueue = (HAL_QUEUE_Obj){0};
+    handle->txCompleteEventQueue = (HAL_QUEUE_Obj){0};
+    handle->controllerState = HAL_CAN_STATE_UNINITIALIZED;
+    handle->flagInterruptsConfigured = false;
+    handle->flagInterruptsEnabled = false;
+    handle->flagErrorInterruptConfigured = false;
+    handle->flagErrorInterruptEnabled = false;
+    handle->flagStatusInterruptConfigured = false;
+    handle->flagStatusInterruptEnabled = false;
+    handle->flagCurrentProtocolError = false;
+    handle->flagDiagnosticFaultEventPending = false;
+
     status = HAL_CAN_hwInitializeModule(handle->canBaseAddress);
     if (status != HAL_STATUS_OK)
     {
-        handle->controllerState = HAL_CAN_STATE_UNINITIALIZED;
         return status;
     }
     CAN_selectClockSource(handle->canBaseAddress, CAN_CLOCK_SOURCE_SYS);
@@ -144,20 +170,7 @@ HAL_CAN_init(HAL_CAN_Handle_t handle, const HAL_CAN_Config_t *config)
     /* Recovery timing is application policy; automatic Bus-on stays disabled. */
     CAN_disableAutoBusOn(handle->canBaseAddress);
 
-    handle->canDiagnostics = (HAL_CAN_Diagnostics_t){0};
-    handle->canDiagnostics.busState = HAL_CAN_BUS_STATE_STOPPED;
-    handle->lastObservedBusState = HAL_CAN_BUS_STATE_STOPPED;
-    handle->rxEventQueue = (HAL_QUEUE_Obj){0};
-    handle->txCompleteEventQueue = (HAL_QUEUE_Obj){0};
     handle->controllerState = HAL_CAN_STATE_STOPPED;
-    handle->flagInterruptsConfigured = false;
-    handle->flagInterruptsEnabled = false;
-    handle->flagErrorInterruptConfigured = false;
-    handle->flagErrorInterruptEnabled = false;
-    handle->flagStatusInterruptConfigured = false;
-    handle->flagStatusInterruptEnabled = false;
-    handle->flagCurrentProtocolError = false;
-    handle->flagDiagnosticFaultEventPending = false;
 
     return HAL_STATUS_OK;
 }

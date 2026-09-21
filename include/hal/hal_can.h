@@ -247,7 +247,13 @@ typedef struct
     uint32_t unexpectedInterruptCount; /**< Unrecognized or unconfigured interrupt causes. */
 } HAL_CAN_Diagnostics_t;
 
-/** Runtime object for one CAN controller instance. */
+/**
+ * Runtime object for one CAN controller instance.
+ *
+ * Zero-initialize the complete object before first use, then assign only
+ * canBaseAddress before calling HAL_CAN_init(). The remaining fields are HAL
+ * state and must not be modified directly after initialization.
+ */
 typedef struct
 {
     uint32_t canBaseAddress;           /**< Controller instance supplied by the platform layer. */
@@ -274,8 +280,13 @@ typedef HAL_CAN_Obj *HAL_CAN_Handle_t;
 /**
  * Validates and applies controller-wide configuration, leaving CAN stopped.
  *
- * The caller must set HAL_CAN_Obj.canBaseAddress before calling this function.
- * No hardware state is changed when validation fails.
+ * The caller must zero-initialize HAL_CAN_Obj and set canBaseAddress before the
+ * first call. Reinitialization is permitted only from UNINITIALIZED or STOPPED
+ * state while CAN peripheral interrupts and all platform ISR access are
+ * disabled. A successful reinitialization discards previous mailbox, queue,
+ * and diagnostic runtime state. No hardware or software state is changed when
+ * argument or configuration validation fails. A hardware initialization
+ * failure leaves the object in a safe UNINITIALIZED state.
  *
  * @param handle Runtime object bound to a supported CAN controller.
  * @param config Controller configuration expressed in physical timing values;
