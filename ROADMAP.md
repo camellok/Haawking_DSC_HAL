@@ -1,10 +1,10 @@
 # Haawking DSC HAL Roadmap
 
-> 最近更新：2026-09-09
+> 最近更新：2026-09-22
 >
-> 当前阶段：P1 - Platform骨架与HXS320F28002x CpuTimer验收
+> 当前阶段：P5 - Classic CAN HAL初版冻结
 >
-> 当前状态：CpuTimer实现完成；platform参考已调整为整板组合入口；等待宿主编译与上板验证
+> 当前状态：HAL_CAN-1.0候选功能、目标时序及清理后发布态门禁通过；等待候选推送与PR审查，暂不合并`main`
 
 ## 路线目标
 
@@ -32,7 +32,7 @@
 | P2 | ePWM波形、同步、触发和保护基础 | 未开始 | 后续minor版本 |
 | P3 | ADC采样、SOC、PPB和中断 | 未开始 | 后续minor版本 |
 | P4 | CLA任务控制与CPU/CLA数据边界 | 未开始 | 后续minor版本 |
-| P5 | Classic CAN统一接口与目标实现迁移 | 未开始 | 后续minor版本 |
+| P5 | Classic CAN统一接口与目标实现迁移 | 实现中 | `HAL_CAN-1.0`模块基线 |
 | P6 | SCI串行通信 | 未开始 | 后续minor版本 |
 | P7 | I2C控制器与目标设备通信 | 未开始 | 后续minor版本 |
 | P8 | GPIO、CMPSS、DAC、SPI、eCAP、eQEP和DMA | 未开始 | 按需求分批发布 |
@@ -127,6 +127,8 @@ CLA程序、链接命令文件、段放置、数学库选择和算法实现继�
 ## P5：Classic CAN HAL
 
 以训练仓库中冻结后的单一接口为输入重新整理，不直接搬运多套Lab演进副本。
+
+当前已迁入P2-L07候选基线并完成最终代码、资源和目标时序评审。训练仓库通过submodule统一P2-L01至P2-L07，完成七个工程的完整ELF/HEX构建、IDE构建、当前候选主要功能上板回归和正常路径目标时序采样；临时探针移除后的发布态门禁已经复验通过。R10队列满验证由宿主项目明确不执行，standalone Silent、动态Bus-off和强制IF超时等能力继续标注为未验证。候选分支推送后保持PR待审，本轮不合并`main`。
 
 公共能力计划：
 

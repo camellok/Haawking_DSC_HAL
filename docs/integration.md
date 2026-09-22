@@ -15,6 +15,18 @@ Source : third_party/Haawking_DSC_HAL/source/hxs320f28002x/hal_cputimer.c
 Common : third_party/Haawking_DSC_HAL/source/common/hal_queue.c（按需）
 ```
 
+Classic CAN目标还需按需加入：
+
+```text
+Source : third_party/Haawking_DSC_HAL/source/hxs320f28002x/hal_can.c
+Source : third_party/Haawking_DSC_HAL/source/hxs320f28002x/hal_can_hw.c
+Common : third_party/Haawking_DSC_HAL/source/common/hal_queue.c（中断事件模式）
+```
+
+`hal_can_hw.h`是同一目标目录内的私有集成头，只供目标实现和宿主ISR使用，不应加入应用公共接口。
+
+CAN运行期IF1接口不是多任务可重入API；RTOS宿主需要在服务层串行化发送、取消和远程帧更新。Line 0 RX与Line 1 TX完成ISR共同使用IF2，向量配置必须禁止这两个ISR相互嵌套。普通单核裸机中断入口不主动重新开放全局中断时无需额外锁。
+
 宿主还必须提供目标匹配的`driverlib.h`和DriverLib实现。不要把`source`根目录整体加入递归编译。
 
 `source/common`中的文件不依赖DriverLib，可以由所有目标共用。只加入实际使用的组件；泛型队列的存储区由宿主静态分配，跨ISR与主循环共享时由宿主负责同步。
